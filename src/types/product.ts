@@ -45,18 +45,21 @@ export interface UserStory {
 export interface Feature {
   id: string
   title: string
-  description: FeatureDescription
+  description: {
+    what: string
+    why: string
+    how: string
+  }
   status: FeatureStatus
   priority: FeaturePriority
-  startDate: Date
-  endDate: Date
+  startDate: string | null
+  endDate: string | null
   dependencies: string[]
   assignees: string[]
   tags: string[]
-  stories: UserStory[]
+  productId: string
   createdAt: Date
   updatedAt: Date
-  productId: string
 }
 
 export interface Milestone {

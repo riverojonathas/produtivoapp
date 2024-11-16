@@ -8,23 +8,21 @@ import { useRoadmap } from '@/hooks/use-roadmap'
 interface AddFeatureDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  existingFeatures: Feature[]
-  productId: string
+  onSuccess?: () => void
 }
 
 export function AddFeatureDialog({ 
   open, 
   onOpenChange,
-  existingFeatures,
-  productId 
+  onSuccess
 }: AddFeatureDialogProps) {
-  const { createFeature } = useRoadmap(productId)
+  const { createFeature } = useRoadmap()
 
   const handleSubmit = async (data: Partial<Feature>) => {
     try {
       await createFeature.mutateAsync({
         ...data,
-        productId,
+        productId: '',
         stories: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -33,6 +31,7 @@ export function AddFeatureDialog({
         assignees: data.assignees || []
       } as Feature)
       onOpenChange(false)
+      onSuccess?.()
     } catch (error) {
       console.error('Erro ao criar feature:', error)
       throw error
@@ -46,7 +45,7 @@ export function AddFeatureDialog({
           <DialogTitle>Nova Feature</DialogTitle>
         </DialogHeader>
         <FeatureForm
-          existingFeatures={existingFeatures}
+          existingFeatures={[]}
           onSubmit={handleSubmit}
           isSubmitting={createFeature.isPending}
         />

@@ -9,12 +9,8 @@ import {
   startOfMonth, 
   endOfMonth, 
   eachDayOfInterval,
-  eachWeekOfInterval,
   startOfWeek,
   endOfWeek,
-  startOfYear,
-  endOfYear,
-  addWeeks,
   isToday,
   getWeek,
   isFirstDayOfMonth,
@@ -45,40 +41,59 @@ export function TimelineView({
 
   // Gerar período baseado no zoom
   const getPeriodDays = () => {
+    const today = new Date()
+    const defaultDate = currentDate || today
+
     switch (zoomLevel) {
-      case 'year':
+      case 'year': {
         // Gerar um array com o primeiro dia de cada mês do ano
-        const year = currentDate.getFullYear()
+        const year = defaultDate.getFullYear()
         return Array.from({ length: 12 }, (_, month) => new Date(year, month, 1))
+      }
       
-      case 'month':
+      case 'month': {
         // Para mês, mostrar todos os dias do mês
         return eachDayOfInterval({
-          start: startOfMonth(currentDate),
-          end: endOfMonth(currentDate)
+          start: startOfMonth(defaultDate),
+          end: endOfMonth(defaultDate)
         })
+      }
       
-      case 'sprint':
+      case 'sprint': {
         // Para sprint, mostrar duas semanas
-        const sprintStart = startOfWeek(currentDate, { weekStartsOn: 1 })
+        const sprintStart = startOfWeek(defaultDate, { weekStartsOn: 1 })
         const sprintEnd = addDays(sprintStart, 13) // 14 dias
         return eachDayOfInterval({ 
           start: sprintStart, 
           end: sprintEnd 
         })
+      }
       
-      case 'week':
+      case 'week': {
         // Para semana, mostrar 7 dias
-        const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 })
-        const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 })
+        const weekStart = startOfWeek(defaultDate, { weekStartsOn: 1 })
+        const weekEnd = endOfWeek(defaultDate, { weekStartsOn: 1 })
         return eachDayOfInterval({ 
           start: weekStart, 
           end: weekEnd 
         })
+      }
+
+      default: {
+        // Fallback para mês atual
+        return eachDayOfInterval({
+          start: startOfMonth(defaultDate),
+          end: endOfMonth(defaultDate)
+        })
+      }
     }
   }
 
-  const daysInPeriod = getPeriodDays()
+  // Garantir que daysInPeriod sempre tenha um valor
+  const daysInPeriod = getPeriodDays() || []
+
+  // Função para calcular largura de cada coluna
+  const getDayWidth = () => `${100 / (daysInPeriod.length || 1)}%`
 
   // Função para verificar se é o dia/mês atual
   const isCurrentPeriod = (date: Date) => {
@@ -92,135 +107,6 @@ export function TimelineView({
     return isToday(date)
   }
 
-  // Função para obter o título do período atual de forma mais concisa
-  const getCurrentPeriodTitle = () => {
-    switch (zoomLevel) {
-      case 'year':
-        return format(currentDate, 'yyyy')
-      case 'month':
-        return format(currentDate, "MMM'/' yyyy", { locale: ptBR })
-      case 'sprint':
-        const sprintStart = startOfWeek(currentDate, { weekStartsOn: 1 })
-        const sprintEnd = addDays(sprintStart, 13)
-        return `${format(sprintStart, "dd")} - ${format(sprintEnd, "dd MMM", { locale: ptBR })}`
-      case 'week':
-        const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 })
-        const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 })
-        return `${format(weekStart, "dd")} - ${format(weekEnd, "dd MMM", { locale: ptBR })}`
-      default:
-        return format(currentDate, "MMM'/' yyyy", { locale: ptBR })
-    }
-  }
-
-  // Função para calcular a largura de cada coluna
-  const getDayWidth = () => `${100 / daysInPeriod.length}%`
-
-  // Renderizar coluna do período (dia ou mês)
-  const renderPeriodColumn = (date: Date) => {
-    const isActive = isCurrentPeriod(date)
-    const isHovered = hoveredDay?.getTime() === date.getTime()
-    const isWeekStart = date.getDay() === 1
-    const weekNumber = getWeek(date)
-
-    const baseColumnStyle = {
-      width: zoomLevel === 'year' ? `${100 / 12}%` : getDayWidth(),
-      minWidth: zoomLevel === 'year' ? `${100 / 12}%` : getDayWidth()
-    }
-
-    const baseColumnClasses = cn(
-      "relative border-r border-[#E5E7EB] transition-colors duration-150",
-      isWeekStart && !isFirstDayOfMonth(date) && "border-l border-l-[#D1D5DB]",
-      isFirstDayOfMonth(date) && "border-l-2 border-l-[#9CA3AF]",
-      isActive && "bg-[var(--color-primary-subtle)] bg-opacity-5",
-      isHovered && "bg-[#F3F4F6]"
-    )
-
-    if (zoomLevel === 'year') {
-      return (
-        <div
-          key={date.getTime()}
-          className={baseColumnClasses}
-          style={baseColumnStyle}
-          onMouseEnter={() => setHoveredDay(date)}
-          onMouseLeave={() => setHoveredDay(null)}
-        >
-          <div className="flex flex-col items-center gap-1 py-2">
-            <span 
-              className={cn(
-                "text-[11px] font-medium capitalize",
-                isActive ? "text-[var(--color-primary)]" : "text-[#6B7280]"
-              )}
-            >
-              {format(date, 'MMM', { locale: ptBR })}
-            </span>
-          </div>
-
-          {isActive && (
-            <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-[var(--color-primary)] opacity-40" />
-          )}
-        </div>
-      )
-    }
-
-    // Para visualizações de mês, sprint e semana
-    const weekDayInitial = format(date, 'EEEEE', { locale: ptBR }).toUpperCase()
-
-    return (
-      <div
-        key={date.getTime()}
-        className={baseColumnClasses}
-        style={baseColumnStyle}
-        onMouseEnter={() => setHoveredDay(date)}
-        onMouseLeave={() => setHoveredDay(null)}
-      >
-        {/* Container para número da semana (apenas no início) */}
-        {isWeekStart && (
-          <div 
-            className={cn(
-              "absolute -top-6 left-0 w-full flex items-center justify-start",
-              "border-t border-[#E5E7EB] pt-1"
-            )}
-          >
-            <div className="flex items-baseline gap-0.5 px-2">
-              <span className="text-[9px] text-[#9CA3AF] opacity-60">s</span>
-              <span className="text-[9px] text-[#6B7280]">{weekNumber}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Dia e inicial do dia da semana */}
-        <div 
-          className={cn(
-            "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
-            "flex flex-col items-center gap-0.5"
-          )}
-        >
-          <span 
-            className={cn(
-              "text-[9px]",
-              isActive ? "text-[var(--color-primary)]" : "text-[#9CA3AF]"
-            )}
-          >
-            {weekDayInitial}
-          </span>
-          <span 
-            className={cn(
-              "text-[11px] font-medium",
-              isActive ? "text-[var(--color-primary)]" : "text-[#6B7280]"
-            )}
-          >
-            {date.getDate()}
-          </span>
-        </div>
-
-        {/* Indicador de hoje */}
-        {isActive && (
-          <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-[var(--color-primary)] opacity-40" />
-        )}
-      </div>
-    )
-  }
-
   // Atualizar largura do container com ResizeObserver
   useEffect(() => {
     if (!containerRef.current) return
@@ -231,7 +117,6 @@ export function TimelineView({
       }
     }
 
-    // Criar ResizeObserver para monitorar mudanças de tamanho
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         if (entry.target === containerRef.current) {
@@ -240,7 +125,6 @@ export function TimelineView({
       }
     })
 
-    // Observar o container
     resizeObserver.observe(containerRef.current)
     updateWidth() // Atualização inicial
 
@@ -262,11 +146,15 @@ export function TimelineView({
     const positions = new Map<string, { left: number; width: number; top: number }>()
 
     // Ordenar features por data de início
-    const sortedFeatures = [...features].sort((a, b) => 
-      new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
-    )
+    const sortedFeatures = [...features].sort((a, b) => {
+      const aDate = a.startDate ? new Date(a.startDate).getTime() : 0
+      const bDate = b.startDate ? new Date(b.startDate).getTime() : 0
+      return aDate - bDate
+    })
 
     sortedFeatures.forEach(feature => {
+      if (!feature.startDate || !feature.endDate) return
+
       const featureStart = new Date(feature.startDate)
       const featureEnd = new Date(feature.endDate)
       
@@ -338,6 +226,8 @@ export function TimelineView({
     return positions
   }
 
+  // ... continua ...
+
   return (
     <div className="w-full h-full overflow-auto bg-[var(--color-background-primary)] scrollbar-thin scrollbar-thumb-[var(--color-border)] scrollbar-track-transparent">
       <div 
@@ -407,6 +297,7 @@ export function TimelineView({
                 onMouseLeave={() => setHoveredDay(null)}
               >
                 {zoomLevel === 'year' ? (
+                  // Visualização anual - mostra apenas o mês
                   <div className="flex flex-col items-center gap-1 py-2">
                     <span 
                       className={cn(
@@ -419,6 +310,7 @@ export function TimelineView({
                     </span>
                   </div>
                 ) : (
+                  // Visualização mensal/semanal - mostra dia da semana e número
                   <div className="flex flex-col items-center justify-center h-full gap-0.5">
                     <span 
                       className={cn(
@@ -441,6 +333,7 @@ export function TimelineView({
                   </div>
                 )}
 
+                {/* Indicador de hoje */}
                 {isCurrentPeriod(date) && (
                   <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-[var(--color-primary)] shadow-sm shadow-[var(--color-primary)]/20" />
                 )}
@@ -475,8 +368,8 @@ export function TimelineView({
                     )
               )}
               style={{
-                width: zoomLevel === 'year' ? `${100 / 12}%` : getDayWidth(),
-                minWidth: zoomLevel === 'year' ? `${100 / 12}%` : getDayWidth()
+                width: zoomLevel === 'year' ? `${100 / 12}%` : `${100 / daysInPeriod.length}%`,
+                minWidth: zoomLevel === 'year' ? `${100 / 12}%` : `${100 / daysInPeriod.length}%`
               }}
             />
           ))}

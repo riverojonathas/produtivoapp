@@ -29,10 +29,12 @@ export default function AppLayout({
         <Suspense fallback={<Loading />}>
           <Sidebar />
         </Suspense>
-        <main className="flex-1 overflow-auto">
-          <Suspense fallback={<Loading />}>
-            {children}
-          </Suspense>
+        <main className="flex-1 overflow-auto px-8 py-10 max-w-[1600px] mx-auto">
+          <div className="h-full">
+            <Suspense fallback={<Loading />}>
+              {children}
+            </Suspense>
+          </div>
         </main>
       </div>
     </ErrorBoundary>
