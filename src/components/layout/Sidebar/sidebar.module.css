@@ -1,0 +1,277 @@
+.sidebar {
+  width: var(--sidebar-width-expanded);
+  min-width: var(--sidebar-width-expanded);
+  max-width: var(--sidebar-width-expanded);
+  height: 100vh;
+  background-color: var(--color-background-secondary);
+  transition: width var(--transition-normal);
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 40;
+  padding: 1rem 0.75rem;
+}
+
+.sidebarContent {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.navigation {
+  flex-grow: 1;
+  margin-top: 2rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.section {
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+
+/* Estilo do botão da seção */
+.sectionButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  font-size: 0.9375rem;
+  position: relative;
+}
+
+/* Hover e estados ativos */
+.section:hover .sectionButton,
+.section.expanded .sectionButton,
+.sectionButton.active {
+  color: var(--color-text-primary);
+  background-color: var(--color-background-elevated);
+}
+
+.sectionIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-right: 0.875rem;
+  flex-shrink: 0;
+  transition: color var(--transition-fast);
+}
+
+.sectionText {
+  flex: 1;
+  text-align: left;
+  font-weight: 500;
+}
+
+.chevron {
+  width: 1rem;
+  height: 1rem;
+  transition: transform var(--transition-fast);
+  flex-shrink: 0;
+  opacity: 0.5;
+  margin-left: 0.5rem;
+}
+
+.expanded .chevron {
+  transform: rotate(-180deg);
+}
+
+/* Submenu */
+.submenu {
+  margin: 0.25rem 0;
+  padding-left: 2.75rem;
+  display: none;
+  animation: slideDown 0.2s ease-out;
+}
+
+.expanded .submenu {
+  display: block;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  padding: 0.625rem 1rem;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  border-radius: 0.5rem;
+  transition: all var(--transition-fast);
+  font-size: 0.875rem;
+  margin: 0.125rem 0;
+}
+
+.menuItem:hover {
+  color: var(--color-text-primary);
+  background-color: var(--color-background-elevated);
+}
+
+.menuItem.active {
+  color: var(--color-primary);
+  background-color: var(--color-background-elevated);
+}
+
+.menuItemIcon {
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-right: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* Estado colapsado */
+.collapsed {
+  width: var(--sidebar-width-collapsed);
+  min-width: var(--sidebar-width-collapsed);
+  max-width: var(--sidebar-width-collapsed);
+  padding: 1rem 0.5rem;
+}
+
+.collapsed .sectionText,
+.collapsed .chevron {
+  display: none;
+}
+
+.collapsed .sectionButton {
+  padding: 0.75rem;
+  justify-content: center;
+}
+
+.collapsed .sectionIcon {
+  margin-right: 0;
+}
+
+/* Submenu no estado colapsado */
+.collapsed .section {
+  position: relative;
+}
+
+.collapsed .section:hover {
+  background-color: var(--color-background-elevated);
+  border-radius: 0.5rem;
+}
+
+/* Ajuste do submenu no estado colapsado */
+.collapsed .submenu {
+  display: none;
+  position: absolute;
+  left: calc(100% + 0.5rem);
+  top: 0;
+  min-width: 200px;
+  background-color: var(--color-background-elevated);
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  box-shadow: var(--shadow-lg);
+  z-index: 45;
+  animation: slideIn 0.2s ease-out;
+}
+
+/* Mostrar submenu no hover */
+.collapsed .section:hover .submenu {
+  display: block;
+  animation: slideIn 0.2s ease-out;
+}
+
+/* Ajustes para os itens do submenu */
+.collapsed .submenu .menuItem {
+  padding: 0.625rem 0.75rem;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.collapsed .submenu .menuItemIcon {
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-right: 0.75rem;
+}
+
+.collapsed .submenu .menuItemText {
+  display: block;
+  opacity: 1;
+  font-size: 0.875rem;
+}
+
+/* Animação do submenu */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+}
+
+/* Barra de controle */
+.controlBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  margin-top: auto;
+  gap: 0.5rem;
+}
+
+.collapsed .controlBar {
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 0.5rem;
+}
+
+.controlButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.controlButton:hover {
+  color: var(--color-text-primary);
+  background-color: var(--color-background-elevated);
+}
+
+/* Animações */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scrollbar */
+.navigation::-webkit-scrollbar {
+  width: 4px;
+}
+
+.navigation::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.navigation::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: 2px;
+}
+
+.navigation::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-border-strong);
+}

@@ -1,0 +1,6 @@
+mkdir -p src/{app,components,features,hooks,lib,types,utils}
+mkdir -p src/app/(auth)/{dashboard,products,settings}
+mkdir -p src/components/{common,features,layout}
+mkdir -p src/components/common/{Button,Input,Card}
+mkdir -p src/components/features/{products,dashboard}
+mkdir -p src/components/layout 

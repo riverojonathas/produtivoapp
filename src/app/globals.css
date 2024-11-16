@@ -1,0 +1,520 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+ 
+@layer base {
+  :root {
+    /* Cores Base - Sistema de Design */
+    --color-primary: #4CAF50;
+    --color-primary-light: #1ed760;
+    --color-primary-dark: #45a049;
+    --color-primary-subtle: rgba(29, 185, 84, 0.12);
+    
+    /* Cores de Apoio */
+    --color-success: #00C853;
+    --color-warning: #FFB300;
+    --color-error: #dc2626;
+    --color-info: #00B8D4;
+    
+    /* Backgrounds - Light Theme */
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #F8FAFC;
+    --color-background-tertiary: #F1F5F9;
+    --color-background-elevated: #ffffff;
+    --color-background-subtle: rgba(0, 0, 0, 0.02);
+    --color-background-inset: rgba(0, 0, 0, 0.03);
+    --color-background-hover: rgba(0, 0, 0, 0.02);
+    --color-background-active: rgba(0, 0, 0, 0.04);
+    --color-background-selected: rgba(29, 185, 84, 0.08);
+    
+    /* Gradientes */
+    --gradient-primary: linear-gradient(135deg, #0066FF 0%, #00B8D4 100%);
+    --gradient-success: linear-gradient(135deg, #00C853 0%, #64DD17 100%);
+    --gradient-card: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(248, 250, 252, 0.8) 100%);
+    
+    /* Sombras com blur mais suave */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03), 0 1px 6px rgba(0, 0, 0, 0.02);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.03), 0 2px 4px rgba(0, 0, 0, 0.02);
+    --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.03), 0 4px 8px rgba(0, 0, 0, 0.02);
+    --shadow-xl: 0 20px 24px rgba(0, 0, 0, 0.03), 0 8px 16px rgba(0, 0, 0, 0.02);
+    
+    /* Texto - Light Theme */
+    --color-text-primary: #333333;
+    --color-text-secondary: #666666;
+    --color-text-tertiary: #6B7280;
+    --color-text-subtle: #9CA3AF;
+    
+    /* Estados e Interações */
+    --color-accent-hover: rgba(76, 175, 80, 0.1);
+    --color-accent-light: rgba(76, 175, 80, 0.15);
+    --color-accent-strong: rgba(29, 185, 84, 0.16);
+    
+    /* Bordas e Divisores */
+    --color-border: #E5E5E5;
+    --color-border-subtle: rgba(0, 0, 0, 0.04);
+    --color-border-strong: rgba(0, 0, 0, 0.08);
+    
+    /* Dimensões */
+    --sidebar-width-expanded: 280px;
+    --sidebar-width-collapsed: 72px;
+    --header-height: 64px;
+    --border-radius-sm: 6px;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --border-radius-xl: 16px;
+    
+    /* Transições */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+ 
+  [data-theme="dark"] {
+    /* Backgrounds - Dark Theme */
+    --color-background-primary: #1a1a1a;
+    --color-background-secondary: #121212;
+    --color-background-tertiary: #181818;
+    --color-background-elevated: #242424;
+    --color-background-subtle: rgba(255, 255, 255, 0.03);
+    --color-background-inset: rgba(255, 255, 255, 0.04);
+    --color-background-hover: rgba(255, 255, 255, 0.04);
+    --color-background-active: rgba(255, 255, 255, 0.06);
+    --color-background-selected: rgba(29, 185, 84, 0.16);
+    
+    /* Gradientes - Dark Theme */
+    --gradient-primary: linear-gradient(135deg, #0066FF 0%, #00B8D4 100%);
+    --gradient-card: linear-gradient(180deg, rgba(26, 26, 26, 0) 0%, rgba(10, 10, 10, 0.8) 100%);
+    
+    /* Texto - Dark Theme */
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #a3a3a3;
+    --color-text-tertiary: #737373;
+    --color-text-subtle: #525252;
+    
+    /* Estados e Interações */
+    --color-accent-hover: rgba(76, 175, 80, 0.2);
+    --color-accent-light: rgba(76, 175, 80, 0.25);
+    --color-accent-strong: rgba(29, 185, 84, 0.24);
+    
+    /* Bordas e Divisores */
+    --color-border: #333333;
+    --color-border-subtle: rgba(255, 255, 255, 0.04);
+    --color-border-strong: rgba(255, 255, 255, 0.08);
+    
+    /* Shadows - Dark Theme */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.4);
+    --shadow-xl: 0 8px 12px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* Melhorias na Tipografia */
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    letter-spacing: -0.011em;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+}
+
+/* Componentes Base */
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-all duration-200;
+  }
+
+  .btn-primary {
+    @apply bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)];
+  }
+
+  .btn-secondary {
+    @apply bg-[var(--color-background-subtle)] text-[var(--color-text-primary)] 
+           hover:bg-[var(--color-background-hover)];
+  }
+
+  .card {
+    @apply bg-[var(--color-background-elevated)] rounded-lg border border-[var(--color-border)]
+           shadow-sm hover:shadow-md transition-all duration-200;
+  }
+
+  .input {
+    @apply px-4 py-2 rounded-lg bg-[var(--color-background-subtle)] 
+           border border-[var(--color-border)] text-[var(--color-text-primary)]
+           focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-opacity-50;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+}
+
+/* Animações */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Utilitários de Animação */
+.animate-slide-in {
+  animation: slideIn 0.2s ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.2s ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Scrollbar Personalizada */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-strong);
+}
+
+/* Efeitos de Hover */
+.hover-lift {
+  transition: transform var(--transition-bounce);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+.hover-glow {
+  transition: box-shadow var(--transition-normal);
+}
+
+.hover-glow:hover {
+  box-shadow: var(--shadow-md), 0 0 0 2px var(--color-accent-light);
+}
+
+/* Efeitos de Foco */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-opacity-50;
+}
+
+/* Ajuste do layout quando o sidebar está colapsado */
+.collapsed ~ .sidebar-expanded {
+  margin-left: 5rem; /* 80px - mesmo que w-20 */
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.2s ease-out;
+}
+
+/* Densidade */
+:root[data-density="comfortable"] {
+  --font-size-base: 1rem;
+  --font-size-sm: 0.875rem;
+  --font-size-xs: 0.75rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  
+  --line-height-normal: 1.5;
+  --line-height-tight: 1.25;
+  
+  --icon-size-sm: 1rem;
+  --icon-size-md: 1.25rem;
+  --icon-size-lg: 1.5rem;
+}
+
+:root[data-density="compact"] {
+  --font-size-base: 0.875rem;
+  --font-size-sm: 0.75rem;
+  --font-size-xs: 0.675rem;
+  --font-size-lg: 1rem;
+  --font-size-xl: 1.125rem;
+  --font-size-2xl: 1.25rem;
+  
+  --spacing-1: 0.2rem;
+  --spacing-2: 0.4rem;
+  --spacing-3: 0.6rem;
+  --spacing-4: 0.8rem;
+  --spacing-6: 1.2rem;
+  --spacing-8: 1.6rem;
+  
+  --line-height-normal: 1.4;
+  --line-height-tight: 1.2;
+  
+  --icon-size-sm: 0.875rem;
+  --icon-size-md: 1rem;
+  --icon-size-lg: 1.25rem;
+}
+
+/* Aplicar densidade aos elementos */
+.text-base {
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+}
+
+.text-sm {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.text-xs {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-tight);
+}
+
+.text-lg {
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-normal);
+}
+
+.text-xl {
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-tight);
+}
+
+.text-2xl {
+  font-size: var(--font-size-2xl);
+  line-height: var(--line-height-tight);
+}
+
+/* Espaçamentos */
+.p-base { padding: var(--spacing-4); }
+.px-base { padding-left: var(--spacing-4); padding-right: var(--spacing-4); }
+.py-base { padding-top: var(--spacing-4); padding-bottom: var(--spacing-4); }
+
+.gap-base { gap: var(--spacing-4); }
+.space-y-base > * + * { margin-top: var(--spacing-4); }
+.space-x-base > * + * { margin-left: var(--spacing-4); }
+
+/* Ícones */
+.icon-sm { width: var(--icon-size-sm); height: var(--icon-size-sm); }
+.icon-md { width: var(--icon-size-md); height: var(--icon-size-md); }
+.icon-lg { width: var(--icon-size-lg); height: var(--icon-size-lg); }
+
+/* Ajustes específicos para modo compacto */
+:root[data-density="compact"] {
+  /* Sidebar */
+  .sidebar-item {
+    padding: var(--spacing-2) var(--spacing-3);
+  }
+  
+  /* Headers */
+  h1, .h1 { font-size: var(--font-size-2xl); }
+  h2, .h2 { font-size: var(--font-size-xl); }
+  h3, .h3 { font-size: var(--font-size-lg); }
+  
+  /* Inputs e botões */
+  .input-base, .button-base {
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: var(--font-size-sm);
+  }
+  
+  /* Cards e containers */
+  .card {
+    padding: var(--spacing-4);
+  }
+  
+  /* Espaçamento entre seções */
+  .section-spacing {
+    margin-bottom: var(--spacing-6);
+  }
+}
+
+/* Ajustes responsivos */
+@media (max-width: 1024px) {
+  .sidebar-expanded {
+    margin-left: 0 !important;
+  }
+
+  /* Ajustar tamanhos para mobile */
+  :root[data-density="comfortable"],
+  :root[data-density="compact"] {
+    --spacing-4: 0.75rem;
+    --spacing-6: 1rem;
+    --spacing-8: 1.5rem;
+  }
+
+  /* Ajustar tamanhos de fonte para mobile */
+  h1, .h1 { font-size: 1.5rem !important; }
+  h2, .h2 { font-size: 1.25rem !important; }
+  h3, .h3 { font-size: 1.125rem !important; }
+}
+
+/* Melhorar scrollbar em dispositivos touch */
+@media (hover: none) {
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 2px;
+  }
+}
+
+/* Estilos para páginas de autenticação */
+.auth-background {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-background-primary);
+  overflow: hidden;
+}
+
+/* Padrões de fundo */
+.auth-background-pattern {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.02;
+  background-image: 
+    linear-gradient(var(--color-border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-border) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Círculos de destaque */
+.auth-background-circles {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.auth-background-circle {
+  position: absolute;
+  background-color: var(--color-primary);
+  opacity: 0.03;
+  border-radius: 50%;
+  filter: blur(48px);
+}
+
+.auth-background-circle-1 {
+  top: 0;
+  left: -16px;
+  width: 288px;
+  height: 288px;
+}
+
+.auth-background-circle-2 {
+  bottom: 0;
+  right: 0;
+  width: 384px;
+  height: 384px;
+}
+
+.auth-background-circle-3 {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 288px;
+  height: 288px;
+}
+
+/* Container do formulário */
+.auth-container {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 400px;
+  margin: 16px;
+}
+
+.auth-card {
+  padding: 32px;
+  background-color: var(--color-background-elevated);
+  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(8px);
+}
+
+/* Animações */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-animate {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes drawLine {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
