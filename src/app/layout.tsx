@@ -2,6 +2,7 @@
 
 import { ThemeProvider } from '@/contexts/theme-context'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Toaster } from 'sonner'
 import { Suspense } from 'react';
 import './globals.css'
 
@@ -32,6 +33,7 @@ export default function RootLayout({
             <Suspense fallback={<div>Carregando...</div>}>
               {children}
             </Suspense>
+            <Toaster />
           </ThemeProvider>
         </QueryClientProvider>
       </body>

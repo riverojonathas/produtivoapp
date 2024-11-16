@@ -31,7 +31,7 @@ export function FeatureCard({ feature, onClick, onStatusChange, onDelete }: Feat
 
   // Calcular progresso baseado nas histórias
   const calculateProgress = () => {
-    if (feature.stories.length === 0) return 0
+    if (!feature.stories || feature.stories.length === 0) return 0
     const completedStories = feature.stories.filter(story => story.status === 'completed')
     return Math.round((completedStories.length / feature.stories.length) * 100)
   }
@@ -201,9 +201,11 @@ export function FeatureCard({ feature, onClick, onStatusChange, onDelete }: Feat
 
           {/* Contador de Histórias */}
           <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--color-text-secondary)]">
-            <span>{feature.stories.filter(s => s.status === 'completed').length}</span>
+            <span>
+              {feature.stories ? feature.stories.filter(s => s.status === 'completed').length : 0}
+            </span>
             <span>/</span>
-            <span>{feature.stories.length}</span>
+            <span>{feature.stories?.length || 0}</span>
             <span>histórias concluídas</span>
           </div>
         </div>

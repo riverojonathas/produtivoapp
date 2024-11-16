@@ -19,259 +19,272 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useForm } from 'react-hook-form'
+import { Form, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 
 interface FeatureFormProps {
   feature?: Feature
   existingFeatures: Feature[]
+  personas?: Persona[]
   onSubmit: (data: Partial<Feature>) => Promise<void>
   isSubmitting?: boolean
+  defaultValues?: Partial<Feature>
 }
 
 export function FeatureForm({ 
   feature, 
   existingFeatures, 
+  personas = [],
   onSubmit,
-  isSubmitting 
+  isSubmitting,
+  defaultValues
 }: FeatureFormProps) {
-  const [formData, setFormData] = useState<Partial<Feature>>(
-    feature || {
+  const form = useForm<Feature>({
+    defaultValues: defaultValues || {
       title: '',
       description: {
         what: '',
         why: '',
-        who: '',
-        metrics: '',
-        notes: ''
+        how: '',
+        who: ''
       },
-      status: 'planned',
+      status: 'backlog',
       priority: 'medium',
-      startDate: new Date(),
-      endDate: new Date(new Date().setDate(new Date().getDate() + 14)),
+      startDate: null,
+      endDate: null,
       dependencies: [],
       assignees: [],
-      tags: [],
-      stories: []
+      tags: []
     }
-  )
-  const [errors, setErrors] = useState<Record<string, string>>({})
-
-  const validation = useFeatureValidation(existingFeatures)
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {}
-
-    // Validar campos obrigatórios
-    if (!formData.title?.trim()) {
-      newErrors.title = 'Título é obrigatório'
-    }
-
-    if (!formData.description?.what?.trim()) {
-      newErrors.description = 'Descrição do que é a feature é obrigatória'
-    }
-
-    if (!formData.description?.why?.trim()) {
-      newErrors.description = 'Motivo da feature é obrigatório'
-    }
-
-    if (!formData.description?.who?.trim()) {
-      newErrors.description = 'Público-alvo da feature é obrigatório'
-    }
-
-    if (!formData.startDate) {
-      newErrors.dates = 'Data de início é obrigatória'
-    }
-
-    if (!formData.endDate) {
-      newErrors.dates = 'Data de fim é obrigatória'
-    }
-
-    // Validações adicionais
-    const titleError = validation.validateTitle(formData.title!, feature?.id)
-    if (titleError) newErrors.title = titleError
-
-    if (formData.startDate && formData.endDate) {
-      const datesError = validation.validateDates(formData.startDate, formData.endDate)
-      if (datesError) newErrors.dates = datesError
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!validateForm()) return
-
-    try {
-      await onSubmit(formData)
-    } catch (error) {
-      console.error('Erro ao salvar feature:', error)
-      setErrors({ submit: 'Erro ao salvar feature. Tente novamente.' })
-    }
-  }
+  })
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Título */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-[var(--color-text-primary)]">
-          Título
-        </label>
-        <Input
-          value={formData.title}
-          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-          placeholder="Nome da feature"
-          className={cn(errors.title && "border-red-500")}
-        />
-        {errors.title && (
-          <p className="text-xs text-red-500">{errors.title}</p>
-        )}
-      </div>
-
-      {/* Descrição */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-[var(--color-text-primary)]">
-          Descrição
-        </label>
-        <Textarea
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="Descreva a feature"
-          className={cn(errors.description && "border-red-500")}
-        />
-        {errors.description && (
-          <p className="text-xs text-red-500">{errors.description}</p>
-        )}
-      </div>
-
-      {/* Status e Prioridade */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-[var(--color-text-primary)]">
-            Status
-          </label>
-          <Select
-            value={formData.status}
-            onValueChange={(value: FeatureStatus) => 
-              setFormData({ ...formData, status: value })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione o status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="planned">Planejado</SelectItem>
-              <SelectItem value="in-progress">Em Progresso</SelectItem>
-              <SelectItem value="completed">Concluído</SelectItem>
-              <SelectItem value="blocked">Bloqueado</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-[var(--color-text-primary)]">
-            Prioridade
-          </label>
-          <Select
-            value={formData.priority}
-            onValueChange={(value: FeaturePriority) => 
-              setFormData({ ...formData, priority: value })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione a prioridade" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="low">Baixa</SelectItem>
-              <SelectItem value="medium">Média</SelectItem>
-              <SelectItem value="high">Alta</SelectItem>
-              <SelectItem value="urgent">Urgente</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Datas */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-[var(--color-text-primary)]">
-            Data de Início
-          </label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !formData.startDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {formData.startDate ? (
-                  format(formData.startDate, "PPP", { locale: ptBR })
-                ) : (
-                  <span>Selecione uma data</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={formData.startDate}
-                onSelect={(date) => setFormData({ ...formData, startDate: date })}
-                initialFocus
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        {/* Título */}
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Título</FormLabel>
+              <Input
+                {...field}
+                placeholder="Ex: Implementar sistema de notificações"
               />
-            </PopoverContent>
-          </Popover>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Descrição */}
+        <div className="space-y-6">
+          <h3 className="text-sm font-medium text-[var(--color-text-secondary)]">
+            Descrição
+          </h3>
+          
+          <FormField
+            control={form.control}
+            name="description.what"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>O que é?</FormLabel>
+                <Textarea
+                  {...field}
+                  placeholder="Descreva o que é a feature e suas principais funcionalidades"
+                />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="description.why"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Por quê?</FormLabel>
+                <Textarea
+                  {...field}
+                  placeholder="Explique o motivo e o valor que essa feature trará"
+                />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="description.who"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Para quem?</FormLabel>
+                <Select
+                  value={field.value}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a persona" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {personas?.map(persona => (
+                      <SelectItem key={persona.id} value={persona.id}>
+                        {persona.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-[var(--color-text-primary)]">
-            Data de Fim
-          </label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !formData.endDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {formData.endDate ? (
-                  format(formData.endDate, "PPP", { locale: ptBR })
-                ) : (
-                  <span>Selecione uma data</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={formData.endDate}
-                onSelect={(date) => setFormData({ ...formData, endDate: date })}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
+        {/* Status e Prioridade */}
+        <div className="grid grid-cols-2 gap-6">
+          <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Status</FormLabel>
+                <Select
+                  value={field.value}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="backlog">Backlog</SelectItem>
+                    <SelectItem value="discovery">Discovery</SelectItem>
+                    <SelectItem value="doing">Em Desenvolvimento</SelectItem>
+                    <SelectItem value="done">Concluído</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="priority"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Prioridade</FormLabel>
+                <Select
+                  value={field.value}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a prioridade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Baixa</SelectItem>
+                    <SelectItem value="medium">Média</SelectItem>
+                    <SelectItem value="high">Alta</SelectItem>
+                    <SelectItem value="urgent">Urgente</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
-      </div>
-      {errors.dates && (
-        <p className="text-xs text-red-500 mt-1">{errors.dates}</p>
-      )}
 
-      {/* Erro geral */}
-      {errors.submit && (
-        <p className="text-sm text-red-500">{errors.submit}</p>
-      )}
+        {/* Datas */}
+        <div className="grid grid-cols-2 gap-6">
+          <FormField
+            control={form.control}
+            name="startDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Data de Início</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !field.value && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {field.value ? (
+                        format(field.value, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+                      ) : (
+                        <span>Selecione uma data</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent 
+                    className="w-auto p-0 bg-[var(--color-background-primary)] border border-[var(--color-border)]"
+                    align="start"
+                  >
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      initialFocus
+                      disabled={(date) => false}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-      {/* Botões */}
-      <div className="flex justify-end gap-3">
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Salvando...' : feature ? 'Salvar' : 'Criar'}
-        </Button>
-      </div>
-    </form>
+          <FormField
+            control={form.control}
+            name="endDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Data de Fim</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !field.value && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {field.value ? (
+                        format(field.value, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+                      ) : (
+                        <span>Selecione uma data</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent 
+                    className="w-auto p-0 bg-[var(--color-background-primary)] border border-[var(--color-border)]"
+                    align="start"
+                  >
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      initialFocus
+                      disabled={(date) => false}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* Botões */}
+        <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Salvando...' : feature ? 'Salvar' : 'Criar'}
+          </Button>
+        </div>
+      </form>
+    </Form>
   )
 } 

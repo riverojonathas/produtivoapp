@@ -26,7 +26,8 @@ import {
   GitBranch,
   ListTodo,
   Users,
-  Bell
+  Bell,
+  BookOpen
 } from "lucide-react"
 import { useProfile } from '@/hooks/use-profile'
 import { useAutoCollapse } from '@/hooks/use-auto-collapse'
@@ -58,6 +59,11 @@ const menuItems = [
     title: "Features",
     href: "/features",
     icon: ListTodo,
+  },
+  {
+    title: "Histórias",
+    href: "/stories",
+    icon: BookOpen,
   },
   {
     title: "Priorização",

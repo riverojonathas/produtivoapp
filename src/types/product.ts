@@ -11,7 +11,11 @@ export interface Product {
 
 export type ProductCreateInput = Omit<Product, 'id' | 'created_at' | 'status' | 'owner_id'>; 
 
-export type FeatureStatus = 'backlog' | 'planned' | 'in-progress' | 'completed' | 'blocked'
+export type FeatureStatus = 
+  | 'backlog'    // Features ainda não iniciadas
+  | 'discovery'  // Features em fase de descoberta/pesquisa
+  | 'doing'      // Features em desenvolvimento
+  | 'done'       // Features concluídas
 export type FeaturePriority = 'low' | 'medium' | 'high' | 'urgent'
 export type StoryStatus = 'open' | 'in-progress' | 'completed' | 'blocked'
 
@@ -49,6 +53,7 @@ export interface Feature {
     what: string
     why: string
     how: string
+    who: string
   }
   status: FeatureStatus
   priority: FeaturePriority
@@ -58,6 +63,7 @@ export interface Feature {
   assignees: string[]
   tags: string[]
   productId: string
+  stories?: UserStory[]
   createdAt: Date
   updatedAt: Date
 }
