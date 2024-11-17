@@ -29,7 +29,7 @@ export interface FeatureDescription {
   notes?: string  // Notas adicionais (opcional)
 }
 
-// Template para User Story usando formato "Como [persona], eu quero [ação] para [benefício]"
+// Template para User Story usando formato "Como [persona], eu quero [aç��o] para [benefício]"
 export interface UserStory {
   id: string
   featureId: string
@@ -67,6 +67,14 @@ export interface Feature {
   tags: string[]
   created_at: string
   updated_at: string
+  // Campos de priorização RICE
+  rice_reach?: number
+  rice_impact?: number
+  rice_confidence?: number
+  rice_effort?: number
+  rice_score?: number
+  // Campo de priorização MoSCoW
+  moscow_priority?: 'must' | 'should' | 'could' | 'wont'
 }
 
 export interface Milestone {
@@ -105,4 +113,11 @@ export interface Persona {
   owner_id: string
   created_at: string
   updated_at: string
+}
+
+export interface RICEScore {
+  reach: number
+  impact: number
+  confidence: number
+  effort: number
 } 
