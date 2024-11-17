@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useAdminAlerts } from '@/hooks/use-admin-alerts'
+import { useAdminAlerts, PRIORITY_LABELS } from '@/hooks/use-admin-alerts'
 import { toast } from 'sonner'
 import { Plus } from 'lucide-react'
 
@@ -42,7 +42,7 @@ export function CreateAlertDialog() {
         targetType: 'all'
       })
 
-      toast.success('Alerta criado com sucesso!')
+      toast.success('Alerta criado como rascunho')
       setOpen(false)
       resetForm()
     } catch (error) {
@@ -68,7 +68,7 @@ export function CreateAlertDialog() {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="text-[var(--color-text-primary)]">Criar Novo Alerta</DialogTitle>
+          <DialogTitle>Criar Novo Alerta</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
@@ -118,10 +118,10 @@ export function CreateAlertDialog() {
                   <SelectValue placeholder="Prioridade" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="low">Baixa</SelectItem>
-                  <SelectItem value="medium">Média</SelectItem>
-                  <SelectItem value="high">Alta</SelectItem>
-                  <SelectItem value="urgent">Urgente</SelectItem>
+                  <SelectItem value="low">{PRIORITY_LABELS.low}</SelectItem>
+                  <SelectItem value="medium">{PRIORITY_LABELS.medium}</SelectItem>
+                  <SelectItem value="high">{PRIORITY_LABELS.high}</SelectItem>
+                  <SelectItem value="urgent">{PRIORITY_LABELS.urgent}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -93,7 +93,7 @@ export default function ProductsPage() {
             <span className="text-xs">Grid</span>
           </Button>
           <Button
-            variant="ghost"
+            variant="list"
             size="sm"
             onClick={() => setViewMode('list')}
             className={cn(
@@ -101,7 +101,7 @@ export default function ProductsPage() {
               viewMode === 'list' && "bg-white shadow-sm"
             )}
           >
-            <List className="w-4 h-4" />
+            <List className="w-4 h-4 mr-2" />
             <span className="text-xs">Lista</span>
           </Button>
         </div>

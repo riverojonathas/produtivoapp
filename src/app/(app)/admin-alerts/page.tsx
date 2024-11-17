@@ -1,11 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { useAdminAlerts } from '@/hooks/use-admin-alerts'
+import { useAdminAlerts, PRIORITY_LABELS, STATUS_LABELS } from '@/hooks/use-admin-alerts'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CreateAlertDialog } from '@/components/admin/create-alert-dialog'
+import { DeleteAlertDialog } from '@/components/admin/delete-alert-dialog'
+import { EditAlertDialog } from '@/components/admin/edit-alert-dialog'
 import {
   Select,
   SelectContent,
@@ -21,11 +23,14 @@ import {
   Search,
   Calendar,
   Users,
+  Trash2,
+  Filter,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface AdminAlert {
   id: string
@@ -42,10 +47,11 @@ type AlertType = 'info' | 'warning' | 'error' | 'success' | 'all'
 type AlertStatus = 'draft' | 'scheduled' | 'sent' | 'cancelled' | 'all'
 
 export default function AdminAlertsPage() {
-  const { alerts, isLoading, cancelAlert } = useAdminAlerts()
+  const { alerts, isLoading, cancelAlert, deleteAlert, updateAlert } = useAdminAlerts()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedType, setSelectedType] = useState<AlertType>('all')
   const [selectedStatus, setSelectedStatus] = useState<AlertStatus>('all')
+  const [alertToDelete, setAlertToDelete] = useState<AdminAlert | null>(null)
 
   const getAlertIcon = (type: string) => {
     const iconClass = "w-4 h-4"
@@ -86,19 +92,41 @@ export default function AdminAlertsPage() {
     return matchesSearch && matchesType && matchesStatus
   })
 
+  const handleDeleteAlert = async () => {
+    if (!alertToDelete) return
+
+    try {
+      await deleteAlert.mutateAsync(alertToDelete.id)
+      toast.success('Alerta excluído com sucesso')
+      setAlertToDelete(null)
+    } catch (error) {
+      console.error('Erro ao excluir alerta:', error)
+      toast.error('Erro ao excluir alerta')
+    }
+  }
+
+  const handleUpdateAlert = async (id: string, data: { status: string, scheduled_for?: string | null }) => {
+    await updateAlert.mutateAsync({ id, data })
+  }
+
   return (
     <div className="max-w-[1200px] mx-auto p-6 space-y-6">
-      {/* Header Minimalista */}
+      {/* Header */}
       <div className="flex items-center justify-between pb-6 border-b border-[var(--color-border)]">
-        <h1 className="text-xl font-medium text-[var(--color-text-primary)]">
-          Alertas
-        </h1>
+        <div>
+          <h1 className="text-xl font-medium text-[var(--color-text-primary)]">
+            Alertas
+          </h1>
+          <p className="text-sm text-[var(--color-text-secondary)]">
+            Gerencie todos os alertas do sistema
+          </p>
+        </div>
         <CreateAlertDialog />
       </div>
 
-      {/* Filtros em linha */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-xs">
+      {/* Filtros */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
           <Input
             placeholder="Buscar alertas..."
@@ -108,37 +136,40 @@ export default function AdminAlertsPage() {
           />
         </div>
 
-        <Select
-          value={selectedType}
-          onValueChange={(value: AlertType) => setSelectedType(value)}
-        >
-          <SelectTrigger className="w-[130px] h-9">
-            <SelectValue placeholder="Tipo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="info">Informação</SelectItem>
-            <SelectItem value="warning">Aviso</SelectItem>
-            <SelectItem value="error">Erro</SelectItem>
-            <SelectItem value="success">Sucesso</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-[var(--color-text-secondary)]" />
+          <Select
+            value={selectedType}
+            onValueChange={(value: AlertType) => setSelectedType(value)}
+          >
+            <SelectTrigger className="w-[130px] h-9">
+              <SelectValue placeholder="Tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="info">Informação</SelectItem>
+              <SelectItem value="warning">Aviso</SelectItem>
+              <SelectItem value="error">Erro</SelectItem>
+              <SelectItem value="success">Sucesso</SelectItem>
+            </SelectContent>
+          </Select>
 
-        <Select
-          value={selectedStatus}
-          onValueChange={(value: AlertStatus) => setSelectedStatus(value)}
-        >
-          <SelectTrigger className="w-[130px] h-9">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="draft">Rascunho</SelectItem>
-            <SelectItem value="scheduled">Agendado</SelectItem>
-            <SelectItem value="sent">Enviado</SelectItem>
-            <SelectItem value="cancelled">Cancelado</SelectItem>
-          </SelectContent>
-        </Select>
+          <Select
+            value={selectedStatus}
+            onValueChange={(value: AlertStatus) => setSelectedStatus(value)}
+          >
+            <SelectTrigger className="w-[130px] h-9">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="draft">Rascunho</SelectItem>
+              <SelectItem value="scheduled">Agendado</SelectItem>
+              <SelectItem value="sent">Enviado</SelectItem>
+              <SelectItem value="cancelled">Cancelado</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Lista de Alertas */}
@@ -176,10 +207,10 @@ export default function AdminAlertsPage() {
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Badge className={cn("text-[10px] px-1.5 py-0.5 font-medium border", getPriorityColor(alert.priority))}>
-                        {alert.priority}
+                        {PRIORITY_LABELS[alert.priority]}
                       </Badge>
                       <Badge className={cn("text-[10px] px-1.5 py-0.5 font-medium border", getStatusColor(alert.status))}>
-                        {alert.status}
+                        {STATUS_LABELS[alert.status]}
                       </Badge>
                     </div>
                   </div>
@@ -194,16 +225,30 @@ export default function AdminAlertsPage() {
                       {alert.target_type === 'all' ? 'Todos' : 'Específicos'}
                     </div>
                     
-                    {alert.status === 'scheduled' && (
+                    <div className="ml-auto flex items-center gap-2">
+                      <EditAlertDialog
+                        alert={alert}
+                        onUpdateAlert={handleUpdateAlert}
+                      />
+                      {alert.status === 'scheduled' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => cancelAlert.mutate(alert.id)}
+                          className="text-xs h-7 px-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                        >
+                          Cancelar
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => cancelAlert.mutate(alert.id)}
-                        className="ml-auto text-xs h-7 px-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                        onClick={() => setAlertToDelete(alert)}
+                        className="text-xs h-7 px-2 text-[var(--color-error)] hover:text-[var(--color-error)] hover:bg-[var(--color-error)]/10"
                       >
-                        Cancelar
+                        <Trash2 className="w-3 h-3" />
                       </Button>
-                    )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -211,6 +256,14 @@ export default function AdminAlertsPage() {
           ))}
         </div>
       )}
+
+      {/* Diálogo de confirmação */}
+      <DeleteAlertDialog
+        open={!!alertToDelete}
+        onOpenChange={(open) => !open && setAlertToDelete(null)}
+        onConfirm={handleDeleteAlert}
+        title={alertToDelete?.title || ''}
+      />
     </div>
   )
 } 

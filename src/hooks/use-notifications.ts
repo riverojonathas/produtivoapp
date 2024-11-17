@@ -7,6 +7,13 @@ interface Alert {
   message: string
   type: 'info' | 'warning' | 'error' | 'success'
   priority: 'low' | 'medium' | 'high' | 'urgent'
+  created_at: string
+}
+
+interface AlertNotification {
+  id: string
+  alert_id: string
+  alert: Alert
   read: boolean
   created_at: string
 }
@@ -14,9 +21,8 @@ interface Alert {
 export function useNotifications() {
   const queryClient = useQueryClient()
 
-  // Buscar alertas
-  const alertsQuery = useQuery<Alert[]>({
-    queryKey: ['alerts'],
+  const query = useQuery<AlertNotification[]>({
+    queryKey: ['notifications'],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession()
       
@@ -24,72 +30,102 @@ export function useNotifications() {
         throw new Error('Não autenticado')
       }
 
-      const { data, error } = await supabase
-        .from('notifications')
+      // Buscar alertas enviados para todos os usuários ou específicos para este usuário
+      const { data: alerts, error } = await supabase
+        .from('admin_alerts')
         .select(`
           id,
-          read,
-          admin_alerts (
-            id,
-            title,
-            message,
-            type,
-            priority,
-            created_at
-          )
+          title,
+          message,
+          type,
+          priority,
+          status,
+          target_type,
+          target_users,
+          created_at
         `)
-        .eq('user_id', session.user.id)
+        .eq('status', 'sent')
+        .or(`target_type.eq.all,and(target_type.eq.specific_users,target_users.cs.{${session.user.id}})`)
         .order('created_at', { ascending: false })
 
       if (error) throw error
 
-      return data.map(notification => ({
-        id: notification.id,
-        ...notification.admin_alerts,
-        read: notification.read
-      }))
-    }
+      // Buscar status de leitura
+      const { data: notifications, error: notifError } = await supabase
+        .from('user_notifications')
+        .select('id, alert_id, read, created_at')
+        .eq('user_id', session.user.id)
+
+      if (notifError) throw notifError
+
+      // Combinar alertas com status de leitura
+      const notificationsMap = new Map(
+        notifications?.map(n => [n.alert_id, n]) || []
+      )
+
+      const formattedAlerts = alerts?.map(alert => ({
+        id: notificationsMap.get(alert.id)?.id || alert.id,
+        alert_id: alert.id,
+        alert: {
+          id: alert.id,
+          title: alert.title,
+          message: alert.message,
+          type: alert.type,
+          priority: alert.priority,
+          created_at: alert.created_at
+        },
+        read: notificationsMap.get(alert.id)?.read || false,
+        created_at: notificationsMap.get(alert.id)?.created_at || alert.created_at
+      })) as AlertNotification[]
+
+      return formattedAlerts || []
+    },
+    refetchInterval: 30000
   })
 
-  // Buscar contagem de não lidos
-  const unreadQuery = useQuery({
-    queryKey: ['unread-notifications'],
-    queryFn: async () => {
+  const markAsRead = useMutation({
+    mutationFn: async (notificationId: string) => {
       const { data: { session } } = await supabase.auth.getSession()
       
       if (!session) {
         throw new Error('Não autenticado')
       }
 
-      const { count, error } = await supabase
-        .from('notifications')
-        .select('*', { count: 'exact' })
-        .eq('user_id', session.user.id)
-        .eq('read', false)
-
-      if (error) throw error
-
-      return count || 0
-    }
-  })
-
-  // Marcar como lido
-  const markAsRead = useMutation({
-    mutationFn: async (notificationId: string) => {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ read: true })
+      // Verificar se já existe uma notificação
+      const { data: existing } = await supabase
+        .from('user_notifications')
+        .select('id')
         .eq('id', notificationId)
+        .single()
 
-      if (error) throw error
+      if (existing) {
+        // Atualizar notificação existente
+        const { error } = await supabase
+          .from('user_notifications')
+          .update({ read: true })
+          .eq('id', notificationId)
+
+        if (error) throw error
+      } else {
+        // Criar nova notificação como lida
+        const { error } = await supabase
+          .from('user_notifications')
+          .insert({
+            id: notificationId,
+            user_id: session.user.id,
+            alert_id: notificationId,
+            read: true
+          })
+
+        if (error) throw error
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['alerts'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
       queryClient.invalidateQueries({ queryKey: ['unread-notifications'] })
     }
   })
 
-  // Marcar todos como lidos
   const markAllAsRead = useMutation({
     mutationFn: async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -99,7 +135,7 @@ export function useNotifications() {
       }
 
       const { error } = await supabase
-        .from('notifications')
+        .from('user_notifications')
         .update({ read: true })
         .eq('user_id', session.user.id)
         .eq('read', false)
@@ -107,15 +143,15 @@ export function useNotifications() {
       if (error) throw error
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['alerts'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
       queryClient.invalidateQueries({ queryKey: ['unread-notifications'] })
     }
   })
 
   return {
-    alerts: alertsQuery.data,
-    isLoading: alertsQuery.isLoading || unreadQuery.isLoading,
-    unreadCount: unreadQuery.data || 0,
+    notifications: query.data || [],
+    isLoading: query.isLoading,
+    unreadCount: query.data?.filter(n => !n.read).length || 0,
     markAsRead,
     markAllAsRead
   }
