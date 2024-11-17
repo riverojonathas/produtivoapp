@@ -6,32 +6,31 @@ import { cn } from "@/lib/utils"
 import { useState, useEffect } from "react"
 import { useTheme } from "@/hooks/use-theme"
 import { Logo, LogoHorizontal } from "@/components/ui/logo"
+import { Button } from "@/components/ui/button"
 import {
-  Grid2X2,
-  Box,
+  LayoutDashboard,
+  Package,
+  Users,
+  ListTodo,
+  BookOpen,
   Target,
-  Users2,
+  GitBranch,
   BarChart3,
   Settings,
   Moon,
   Sun,
   ChevronLeft,
   ChevronRight,
-  Boxes,
-  User2,
   Menu,
   X,
-  LayoutDashboard,
-  Package,
-  GitBranch,
-  ListTodo,
-  Users,
   Bell,
-  BookOpen
+  AlertTriangle,
+  User2,
 } from "lucide-react"
 import { useProfile } from '@/hooks/use-profile'
 import { useAutoCollapse } from '@/hooks/use-auto-collapse'
-import { useNotifications } from '@/hooks/useNotifications'
+import { useNotifications } from '@/hooks/use-notifications'
+import { useAdmin } from '@/hooks/use-admin'
 import {
   Tooltip,
   TooltipContent,
@@ -81,6 +80,12 @@ const menuItems = [
     icon: BarChart3,
   },
   {
+    title: "Alertas Admin",
+    href: "/admin-alerts",
+    icon: AlertTriangle,
+    adminOnly: true,
+  },
+  {
     title: "Configurações",
     href: "/settings",
     icon: Settings,
@@ -90,17 +95,17 @@ const menuItems = [
 export function Sidebar() {
   const pathname = usePathname()
   const { theme, toggleTheme } = useTheme()
-  const { profile, loading } = useProfile()
   const { isCollapsed, setIsCollapsed } = useAutoCollapse()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const { unreadCount, markAllAsRead } = useNotifications()
+  const { isAdmin } = useAdmin()
+  const { unreadCount } = useNotifications()
 
   // Detectar tamanho da tela
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024) // 1024px é o breakpoint lg do Tailwind
+      setIsMobile(window.innerWidth < 1024)
     }
 
     checkMobile()
@@ -112,6 +117,11 @@ export function Sidebar() {
   useEffect(() => {
     setIsMobileMenuOpen(false)
   }, [pathname])
+
+  // Filtrar itens do menu baseado em permissões
+  const filteredMenuItems = menuItems.filter(item => 
+    !item.adminOnly || (item.adminOnly && isAdmin)
+  )
 
   return (
     <>
@@ -176,7 +186,7 @@ export function Sidebar() {
         {/* Menu */}
         <nav className="flex-1 overflow-y-auto p-3">
           <div className="space-y-1">
-            {menuItems.map((item) => (
+            {filteredMenuItems.map((item) => (
               <TooltipProvider key={item.href} delayDuration={0}>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -217,68 +227,85 @@ export function Sidebar() {
         {/* Footer */}
         <div className="shrink-0 border-t border-[var(--color-border)] p-2">
           <div className={cn(
-            "flex items-center justify-center gap-2",
-            isCollapsed && !isMobile && "flex-col"
+            "flex items-center gap-2",
+            isCollapsed ? "flex-col" : "justify-between px-2"
           )}>
-            <button
-              onClick={toggleTheme}
-              className={cn(
-                "p-2 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-subtle)] hover:text-[var(--color-primary)] transition-all duration-200 group",
-                isCollapsed && !isMobile && "p-1.5"
-              )}
-              title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
-            >
-              {theme === 'dark' ? (
-                <Moon className={cn("group-hover:scale-110 transition-transform duration-200", isCollapsed && !isMobile ? "w-4 h-4" : "w-5 h-5")} />
-              ) : (
-                <Sun className={cn("group-hover:scale-110 transition-transform duration-200", isCollapsed && !isMobile ? "w-4 h-4" : "w-5 h-5")} />
-              )}
-            </button>
+            <div className={cn(
+              "flex items-center gap-2",
+              isCollapsed && "flex-col"
+            )}>
+              {/* Botão de Tema */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleTheme}
+                className="h-8 w-8 p-0 text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-subtle)] hover:text-[var(--color-primary)] transition-all duration-200 group"
+                title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+              >
+                {theme === 'dark' ? (
+                  <Moon className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                ) : (
+                  <Sun className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                )}
+              </Button>
 
-            {/* Botão de Notificações */}
-            <button
-              onClick={markAllAsRead}
-              className={cn(
-                "relative p-2 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-subtle)] hover:text-[var(--color-primary)] transition-all duration-200 group",
-                isCollapsed && !isMobile && "p-1.5"
-              )}
-              title="Notificações"
-            >
-              <Bell className={cn("group-hover:scale-110 transition-transform duration-200", isCollapsed && !isMobile ? "w-4 h-4" : "w-5 h-5")} />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-3.5 min-w-[14px] rounded-full bg-[var(--color-error)] text-white text-[10px] font-medium flex items-center justify-center px-1">
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </span>
-              )}
-            </button>
+              {/* Botão de Alertas */}
+              <Button
+                variant="ghost"
+                size="icon"
+                asChild
+                className="relative h-8 w-8 p-0 text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-subtle)] hover:text-[var(--color-primary)] transition-all duration-200 group"
+                title="Alertas"
+              >
+                <Link href="/alerts">
+                  <Bell className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-3.5 min-w-[14px] rounded-full bg-[var(--color-error)] text-white text-[10px] font-medium flex items-center justify-center px-1">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </Link>
+              </Button>
 
-            {/* Botão de Perfil - Agora com Link */}
-            <Link
-              href="/profile"
-              className={cn(
-                "p-2 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-subtle)] hover:text-[var(--color-primary)] transition-all duration-200 group",
-                isCollapsed && !isMobile && "p-1.5"
-              )}
-              title="Perfil"
-            >
-              <User2 className={cn("group-hover:scale-110 transition-transform duration-200", isCollapsed && !isMobile ? "w-4 h-4" : "w-5 h-5")} />
-            </Link>
+              {/* Link de Perfil */}
+              <Button
+                variant="ghost"
+                size="icon"
+                asChild
+                className="h-8 w-8 p-0 text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-subtle)] hover:text-[var(--color-primary)] transition-all duration-200 group"
+                title="Perfil"
+              >
+                <Link href="/profile">
+                  <User2 className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                </Link>
+              </Button>
 
-            {/* Botão de Colapsar */}
-            <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className={cn(
-                "p-2 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-subtle)] hover:text-[var(--color-primary)] transition-all duration-200 group",
-                isCollapsed && !isMobile && "p-1.5"
+              {/* Botão de Colapsar - Movido para dentro do primeiro div quando colapsado */}
+              {isCollapsed && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsCollapsed(false)}
+                  className="h-8 w-8 p-0 text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-subtle)] hover:text-[var(--color-primary)] transition-all duration-200 group"
+                  title="Expandir menu"
+                >
+                  <ChevronRight className="h-4 w-4 group-hover:scale-110 group-hover:translate-x-1 transition-transform duration-200" />
+                </Button>
               )}
-              title={isCollapsed ? "Expandir menu" : "Recolher menu"}
-            >
-              {isCollapsed ? (
-                <ChevronRight className={cn("group-hover:scale-110 group-hover:translate-x-1 transition-transform duration-200", isCollapsed && !isMobile ? "w-4 h-4" : "w-5 h-5")} />
-              ) : (
-                <ChevronLeft className={cn("group-hover:scale-110 group-hover:-translate-x-1 transition-transform duration-200", isCollapsed && !isMobile ? "w-4 h-4" : "w-5 h-5")} />
-              )}
-            </button>
+            </div>
+
+            {/* Botão de Colapsar - Mostrado apenas quando expandido */}
+            {!isCollapsed && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsCollapsed(true)}
+                className="h-8 w-8 p-0 text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-subtle)] hover:text-[var(--color-primary)] transition-all duration-200 group"
+                title="Recolher menu"
+              >
+                <ChevronLeft className="h-4 w-4 group-hover:scale-110 group-hover:-translate-x-1 transition-transform duration-200" />
+              </Button>
+            )}
           </div>
         </div>
       </aside>

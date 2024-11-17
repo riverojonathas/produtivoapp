@@ -1,13 +1,14 @@
 'use client';
 
-import Link from 'next/link';
+import React from 'react'
+import Link from 'next/link'
 import { 
   RocketLaunchIcon, 
   ChartBarIcon, 
   UserGroupIcon, 
   SparklesIcon,
   ArrowRightIcon
-} from '@heroicons/react/24/outline';
+} from '@heroicons/react/24/outline'
 
 export default function LandingPage() {
   return (
