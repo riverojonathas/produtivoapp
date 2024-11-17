@@ -4,109 +4,93 @@
  
 @layer base {
   :root {
-    /* Cores Base - Sistema de Design */
-    --color-primary: #4CAF50;
-    --color-primary-light: #1ed760;
-    --color-primary-dark: #45a049;
-    --color-primary-subtle: rgba(29, 185, 84, 0.12);
-    
-    /* Cores de Apoio */
-    --color-success: #00C853;
-    --color-warning: #FFB300;
-    --color-error: #dc2626;
-    --color-info: #00B8D4;
-    
-    /* Backgrounds - Light Theme */
-    --color-background-primary: #ffffff;
-    --color-background-secondary: #F8FAFC;
-    --color-background-tertiary: #F1F5F9;
-    --color-background-elevated: #ffffff;
-    --color-background-subtle: rgba(0, 0, 0, 0.02);
-    --color-background-inset: rgba(0, 0, 0, 0.03);
-    --color-background-hover: rgba(0, 0, 0, 0.02);
-    --color-background-active: rgba(0, 0, 0, 0.04);
-    --color-background-selected: rgba(29, 185, 84, 0.08);
-    
-    /* Gradientes */
-    --gradient-primary: linear-gradient(135deg, #0066FF 0%, #00B8D4 100%);
-    --gradient-success: linear-gradient(135deg, #00C853 0%, #64DD17 100%);
-    --gradient-card: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(248, 250, 252, 0.8) 100%);
-    
-    /* Sombras com blur mais suave */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03), 0 1px 6px rgba(0, 0, 0, 0.02);
-    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.03), 0 2px 4px rgba(0, 0, 0, 0.02);
-    --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.03), 0 4px 8px rgba(0, 0, 0, 0.02);
-    --shadow-xl: 0 20px 24px rgba(0, 0, 0, 0.03), 0 8px 16px rgba(0, 0, 0, 0.02);
-    
-    /* Texto - Light Theme */
-    --color-text-primary: #333333;
-    --color-text-secondary: #666666;
-    --color-text-tertiary: #6B7280;
-    --color-text-subtle: #9CA3AF;
-    
-    /* Estados e Interações */
-    --color-accent-hover: rgba(76, 175, 80, 0.1);
-    --color-accent-light: rgba(76, 175, 80, 0.15);
-    --color-accent-strong: rgba(29, 185, 84, 0.16);
-    
-    /* Bordas e Divisores */
-    --color-border: #E5E5E5;
-    --color-border-subtle: rgba(0, 0, 0, 0.04);
-    --color-border-strong: rgba(0, 0, 0, 0.08);
-    
-    /* Dimensões */
-    --sidebar-width-expanded: 280px;
-    --sidebar-width-collapsed: 72px;
-    --header-height: 64px;
-    --border-radius-sm: 6px;
-    --border-radius-md: 8px;
-    --border-radius-lg: 12px;
-    --border-radius-xl: 16px;
-    
-    /* Transições */
-    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    /* Base Colors */
+    --color-primary: #3B82F6;
+    --color-primary-dark: #2563EB;
+    --color-primary-light: #60A5FA;
+
+    /* Background Colors */
+    --color-background-primary: #FFFFFF;
+    --color-background-secondary: #F9FAFB;
+    --color-background-elevated: #FFFFFF;
+    --color-background-overlay: rgba(0, 0, 0, 0.5);
+
+    /* Text Colors */
+    --color-text-primary: #111827;
+    --color-text-secondary: #6B7280;
+    --color-text-tertiary: #9CA3AF;
+    --color-text-inverse: #FFFFFF;
+
+    /* Border Colors */
+    --color-border: #E5E7EB;
+    --color-border-hover: #D1D5DB;
+
+    /* Status Colors */
+    --color-success: #10B981;
+    --color-error: #EF4444;
+    --color-warning: #F59E0B;
+    --color-info: #3B82F6;
+
+    /* Priority Colors */
+    --color-priority-high: #DC2626;
+    --color-priority-medium: #F59E0B;
+    --color-priority-low: #10B981;
+
+    /* Status Colors */
+    --color-status-done: #10B981;
+    --color-status-doing: #3B82F6;
+    --color-status-blocked: #EF4444;
+    --color-status-backlog: #6B7280;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
   }
  
   [data-theme="dark"] {
-    /* Backgrounds - Dark Theme */
-    --color-background-primary: #1a1a1a;
-    --color-background-secondary: #121212;
-    --color-background-tertiary: #181818;
-    --color-background-elevated: #242424;
-    --color-background-subtle: rgba(255, 255, 255, 0.03);
-    --color-background-inset: rgba(255, 255, 255, 0.04);
-    --color-background-hover: rgba(255, 255, 255, 0.04);
-    --color-background-active: rgba(255, 255, 255, 0.06);
-    --color-background-selected: rgba(29, 185, 84, 0.16);
-    
-    /* Gradientes - Dark Theme */
-    --gradient-primary: linear-gradient(135deg, #0066FF 0%, #00B8D4 100%);
-    --gradient-card: linear-gradient(180deg, rgba(26, 26, 26, 0) 0%, rgba(10, 10, 10, 0.8) 100%);
-    
-    /* Texto - Dark Theme */
-    --color-text-primary: #ffffff;
-    --color-text-secondary: #a3a3a3;
-    --color-text-tertiary: #737373;
-    --color-text-subtle: #525252;
-    
-    /* Estados e Interações */
-    --color-accent-hover: rgba(76, 175, 80, 0.2);
-    --color-accent-light: rgba(76, 175, 80, 0.25);
-    --color-accent-strong: rgba(29, 185, 84, 0.24);
-    
-    /* Bordas e Divisores */
-    --color-border: #333333;
-    --color-border-subtle: rgba(255, 255, 255, 0.04);
-    --color-border-strong: rgba(255, 255, 255, 0.08);
-    
-    /* Shadows - Dark Theme */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-    --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.4);
-    --shadow-xl: 0 8px 12px rgba(0, 0, 0, 0.4);
+    /* Base Colors */
+    --color-primary: #60A5FA;
+    --color-primary-dark: #3B82F6;
+    --color-primary-light: #93C5FD;
+
+    /* Background Colors */
+    --color-background-primary: #111827;
+    --color-background-secondary: #1F2937;
+    --color-background-elevated: #1F2937;
+    --color-background-overlay: rgba(0, 0, 0, 0.75);
+
+    /* Text Colors */
+    --color-text-primary: #F9FAFB;
+    --color-text-secondary: #D1D5DB;
+    --color-text-tertiary: #9CA3AF;
+    --color-text-inverse: #111827;
+
+    /* Border Colors */
+    --color-border: #374151;
+    --color-border-hover: #4B5563;
+
+    /* Status Colors - Adjusted for dark mode */
+    --color-success: #34D399;
+    --color-error: #F87171;
+    --color-warning: #FBBF24;
+    --color-info: #60A5FA;
+
+    /* Priority Colors - Adjusted for dark mode */
+    --color-priority-high: #F87171;
+    --color-priority-medium: #FBBF24;
+    --color-priority-low: #34D399;
+
+    /* Status Colors - Adjusted for dark mode */
+    --color-status-done: #34D399;
+    --color-status-doing: #60A5FA;
+    --color-status-blocked: #F87171;
+    --color-status-backlog: #9CA3AF;
+
+    /* Shadows - Adjusted for dark mode */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5);
   }
 }
 
@@ -524,4 +508,62 @@
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
+}
+
+/* Utilitários */
+.text-primary {
+  color: var(--color-text-primary);
+}
+
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.bg-elevated {
+  background-color: var(--color-background-elevated);
+}
+
+.border-base {
+  border: 1px solid var(--color-border);
+}
+
+/* Transições */
+.transition-colors {
+  transition-property: background-color, border-color, color;
+  transition-duration: 200ms;
+  transition-timing-function: ease-in-out;
+}
+
+/* Efeitos de Hover */
+.hover-border:hover {
+  border-color: var(--color-border-hover);
+}
+
+.hover-elevated:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* Backdrop Filter */
+.backdrop-blur {
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+/* Animações */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 200ms ease-out;
+}
+
+.animate-slide-in {
+  animation: slideIn 200ms ease-out;
 }

@@ -7,6 +7,8 @@ import { Loading } from '@/components/ui/loading';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Toaster } from 'sonner';
+import { useTheme } from '@/hooks/use-theme';
+import { cn } from '@/lib/utils';
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -27,6 +29,7 @@ export default function AppLayout({
   children: React.ReactNode
 }) {
   const [isLoading, setIsLoading] = useState(true);
+  const { theme } = useTheme();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -45,7 +48,7 @@ export default function AppLayout({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-screen bg-[var(--color-background-primary)]">
         <Loading />
       </div>
     );
@@ -53,17 +56,24 @@ export default function AppLayout({
 
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <div className="flex h-screen">
-        <Suspense fallback={<Loading />}>
-          <Sidebar />
-        </Suspense>
-        <main className="flex-1 overflow-auto p-6">
+      <div 
+        className={cn(
+          "min-h-screen bg-[var(--color-background-primary)] text-[var(--color-text-primary)]",
+          theme === 'dark' ? 'dark' : ''
+        )}
+      >
+        <div className="flex h-screen">
           <Suspense fallback={<Loading />}>
-            {children}
+            <Sidebar />
           </Suspense>
-        </main>
+          <main className="flex-1 overflow-auto p-6">
+            <Suspense fallback={<Loading />}>
+              {children}
+            </Suspense>
+          </main>
+        </div>
+        <Toaster />
       </div>
-      <Toaster />
     </ErrorBoundary>
   );
 } 
