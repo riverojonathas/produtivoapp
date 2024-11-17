@@ -79,16 +79,17 @@ export default function SignUp() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-background-primary)]">
       <div className="w-full max-w-md p-8 bg-[var(--color-background-elevated)] rounded-lg shadow-lg">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
+        <div className="flex flex-col items-center space-y-2">
+          <Logo />
+          <h1 className="text-2xl font-semibold text-[var(--color-text-primary)]">
             Criar Conta
           </h1>
-          <p className="text-[var(--color-text-secondary)] mt-2">
+          <p className="text-[var(--color-text-secondary)]">
             Preencha os dados abaixo para começar
           </p>
         </div>
 
-        <form onSubmit={handleSignUp} className="space-y-4">
+        <form onSubmit={handleSignUp} className="space-y-4 mt-6">
           <div>
             <Input
               type="email"
@@ -96,12 +97,10 @@ export default function SignUp() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full"
-              disabled={loading}
+              className="bg-[var(--color-background-subtle)] text-[var(--color-text-primary)]"
               autoComplete="email"
             />
           </div>
-
           <div>
             <Input
               type="password"
@@ -109,17 +108,14 @@ export default function SignUp() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full"
-              disabled={loading}
+              className="bg-[var(--color-background-subtle)] text-[var(--color-text-primary)]"
               autoComplete="new-password"
-              minLength={6}
             />
           </div>
-
           <Button
             type="submit"
+            className="w-full"
             disabled={loading}
-            className="w-full bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)]"
           >
             {loading ? 'Criando conta...' : 'Criar Conta'}
           </Button>
@@ -127,7 +123,10 @@ export default function SignUp() {
 
         <p className="mt-6 text-center text-sm text-[var(--color-text-secondary)]">
           Já tem uma conta?{' '}
-          <Link href="/login" className="text-[var(--color-primary)] hover:underline">
+          <Link
+            href="/login"
+            className="text-[var(--color-primary)] hover:text-[var(--color-primary-dark)]"
+          >
             Fazer login
           </Link>
         </p>

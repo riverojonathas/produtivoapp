@@ -68,70 +68,59 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="auth-background">
-      <div className="auth-background-pattern" />
-      <div className="auth-background-circles">
-        <div className="auth-background-circle auth-background-circle-1" />
-        <div className="auth-background-circle auth-background-circle-2" />
-        <div className="auth-background-circle auth-background-circle-3" />
-      </div>
-
-      <div className="auth-container">
-        <div className="auth-card auth-animate">
-          <div className="flex flex-col items-center space-y-2">
-            <Logo />
-            <h1 className="text-2xl font-semibold text-[var(--color-text-primary)]">
-              Bem-vindo de volta
-            </h1>
-            <p className="text-sm text-[var(--color-text-secondary)]">
-              Entre para continuar
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4 mt-6">
-            <div className="space-y-2">
-              <Input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="bg-[var(--color-background-elevated)]"
-                autoComplete="email"
-              />
-            </div>
-            <div className="space-y-2">
-              <Input
-                type="password"
-                placeholder="Senha"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="bg-[var(--color-background-elevated)]"
-                autoComplete="current-password"
-              />
-            </div>
-            <Button
-              type="submit"
-              className="w-full bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)]"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Entrando...' : 'Entrar'}
-            </Button>
-          </form>
-
-          <div className="text-center mt-6">
-            <p className="text-sm text-[var(--color-text-secondary)]">
-              Ainda não tem uma conta?{' '}
-              <Link
-                href="/signup"
-                className="text-[var(--color-primary)] hover:text-[var(--color-primary-dark)]"
-              >
-                Criar conta
-              </Link>
-            </p>
-          </div>
+    <div className="min-h-screen flex items-center justify-center bg-[var(--color-background-primary)]">
+      <div className="w-full max-w-md p-8 bg-[var(--color-background-elevated)] rounded-lg shadow-lg">
+        <div className="flex flex-col items-center space-y-2">
+          <Logo />
+          <h1 className="text-2xl font-semibold text-[var(--color-text-primary)]">
+            Bem-vindo de volta
+          </h1>
+          <p className="text-[var(--color-text-secondary)]">
+            Entre para continuar
+          </p>
         </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+          <div>
+            <Input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="bg-[var(--color-background-subtle)] text-[var(--color-text-primary)]"
+              autoComplete="email"
+            />
+          </div>
+          <div>
+            <Input
+              type="password"
+              placeholder="Senha"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="bg-[var(--color-background-subtle)] text-[var(--color-text-primary)]"
+              autoComplete="current-password"
+            />
+          </div>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Entrando...' : 'Entrar'}
+          </Button>
+        </form>
+
+        <p className="mt-6 text-center text-sm text-[var(--color-text-secondary)]">
+          Ainda não tem uma conta?{' '}
+          <Link
+            href="/signup"
+            className="text-[var(--color-primary)] hover:text-[var(--color-primary-dark)]"
+          >
+            Criar conta
+          </Link>
+        </p>
       </div>
     </div>
   )
