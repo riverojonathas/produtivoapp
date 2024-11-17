@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Logo } from '@/components/ui/logo'
+import { Logo, LogoHorizontal } from '@/components/ui/logo/index'
 import { toast } from 'sonner'
 import Link from 'next/link'
 

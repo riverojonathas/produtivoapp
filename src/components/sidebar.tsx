@@ -1,12 +1,11 @@
 'use client'
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { useState, useEffect } from "react"
 import { useTheme } from "@/hooks/use-theme"
-import { Logo, LogoHorizontal } from "@/components/ui/logo"
-import { Button } from "@/components/ui/button"
+import { Logo, LogoHorizontal } from "@/components/ui/logo/index"
 import {
   LayoutDashboard,
   Package,
@@ -27,10 +26,10 @@ import {
   AlertTriangle,
   User2,
 } from "lucide-react"
-import { useProfile } from '@/hooks/use-profile'
 import { useAutoCollapse } from '@/hooks/use-auto-collapse'
 import { useNotifications } from '@/hooks/use-notifications'
 import { useAdmin } from '@/hooks/use-admin'
+import { Button } from "@/components/ui/button"
 import {
   Tooltip,
   TooltipContent,
@@ -99,10 +98,9 @@ export function Sidebar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const { isAdmin } = useAdmin()
   const { unreadCount } = useNotifications()
-
-  // Detectar tamanho da tela
   const [isMobile, setIsMobile] = useState(false)
 
+  // Detectar tamanho da tela
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 1024)
@@ -149,43 +147,28 @@ export function Sidebar() {
         className={cn(
           "shrink-0 fixed lg:sticky top-0 h-screen z-50 border-r border-[var(--color-border)] bg-[var(--color-background-primary)] flex flex-col transition-all duration-300",
           // Mobile
-          "w-[280px] lg:w-64",
+          "w-[280px] lg:w-48",
           isMobileMenuOpen ? "left-0" : "-left-[280px]",
           // Desktop
           "lg:left-0",
-          isCollapsed && !isMobile && "lg:w-16"
+          isCollapsed && !isMobile && "lg:w-12",
+          isCollapsed && "collapsed"
         )}
       >
         {/* Logo */}
-        <div className="flex h-14 items-center justify-center px-3 border-b border-[var(--color-border)]">
-          <div className={cn(
-            "flex flex-col items-center",
-            isCollapsed && !isMobile && "w-8 h-8"
-          )}>
+        <div className="flex h-14 items-center justify-center border-b border-[var(--color-border)]">
+          <div className="px-3">
             {isCollapsed && !isMobile ? (
               <Logo />
             ) : (
-              <div className="flex flex-col items-center">
-                <LogoHorizontal />
-              </div>
+              <LogoHorizontal />
             )}
           </div>
-          
-          {/* Botão fechar para mobile */}
-          {isMobile && (
-            <button
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="lg:hidden absolute right-2 p-2 rounded-lg hover:bg-[var(--color-background-secondary)]"
-              title="Fechar menu"
-            >
-              <X className="w-4 h-4 text-[var(--color-text-secondary)]" />
-            </button>
-          )}
         </div>
 
         {/* Menu */}
-        <nav className="flex-1 overflow-y-auto p-3">
-          <div className="space-y-1">
+        <nav className="flex-1 overflow-y-auto py-2 px-1.5">
+          <div className="space-y-0.5">
             {filteredMenuItems.map((item) => (
               <TooltipProvider key={item.href} delayDuration={0}>
                 <Tooltip>
@@ -193,28 +176,28 @@ export function Sidebar() {
                     <Link
                       href={item.href}
                       className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 transition-all duration-200 group",
+                        "flex items-center gap-2 rounded-md px-2 py-1.5 transition-all duration-200 group",
                         pathname === item.href 
                           ? "bg-[var(--color-primary-subtle)] text-[var(--color-primary)]" 
                           : "text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-subtle)] hover:text-[var(--color-primary)]",
-                        isCollapsed && !isMobile && "justify-center px-2"
+                        isCollapsed && !isMobile && "justify-center p-1.5"
                       )}
                     >
                       <item.icon className={cn(
                         "flex-shrink-0 transition-transform duration-200",
-                        "group-hover:scale-110",
+                        "group-hover:scale-105",
                         pathname === item.href && "animate-[pulse_2s_ease-in-out_infinite]",
-                        isCollapsed && !isMobile ? "w-4 h-4" : "w-5 h-5"
+                        "w-4 h-4"
                       )} />
                       {(!isCollapsed || isMobile) && (
-                        <span className="transition-colors duration-200 font-medium">
+                        <span className="text-[11px] font-medium truncate">
                           {item.title}
                         </span>
                       )}
                     </Link>
                   </TooltipTrigger>
                   {isCollapsed && !isMobile && (
-                    <TooltipContent side="right" className="font-medium">
+                    <TooltipContent side="right" className="text-[11px] font-medium">
                       {item.title}
                     </TooltipContent>
                   )}
@@ -225,85 +208,81 @@ export function Sidebar() {
         </nav>
 
         {/* Footer */}
-        <div className="shrink-0 border-t border-[var(--color-border)] p-2">
+        <div className="shrink-0 border-t border-[var(--color-border)] p-1.5">
           <div className={cn(
-            "flex items-center gap-2",
-            isCollapsed ? "flex-col" : "justify-between px-2"
+            "flex items-center gap-1",
+            isCollapsed ? "flex-col" : "justify-between px-1"
           )}>
             <div className={cn(
-              "flex items-center gap-2",
+              "flex items-center gap-1",
               isCollapsed && "flex-col"
             )}>
-              {/* Botão de Tema */}
+              {/* Botões do footer */}
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={toggleTheme}
-                className="h-8 w-8 p-0 text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-subtle)] hover:text-[var(--color-primary)] transition-all duration-200 group"
+                className="h-7 w-7 p-0"
                 title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
               >
                 {theme === 'dark' ? (
-                  <Moon className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                  <Moon className="h-3.5 w-3.5" />
                 ) : (
-                  <Sun className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                  <Sun className="h-3.5 w-3.5" />
                 )}
               </Button>
 
-              {/* Botão de Alertas */}
               <Button
                 variant="ghost"
                 size="icon"
                 asChild
-                className="relative h-8 w-8 p-0 text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-subtle)] hover:text-[var(--color-primary)] transition-all duration-200 group"
+                className="relative h-7 w-7 p-0"
                 title="Alertas"
               >
                 <Link href="/alerts">
-                  <Bell className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                  <Bell className="h-3.5 w-3.5" />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-3.5 min-w-[14px] rounded-full bg-[var(--color-error)] text-white text-[10px] font-medium flex items-center justify-center px-1">
+                    <span className="absolute -top-0.5 -right-0.5 h-2.5 min-w-[10px] rounded-full bg-[var(--color-error)] text-white text-[8px] font-medium flex items-center justify-center px-1">
                       {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                   )}
                 </Link>
               </Button>
 
-              {/* Link de Perfil */}
               <Button
                 variant="ghost"
                 size="icon"
                 asChild
-                className="h-8 w-8 p-0 text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-subtle)] hover:text-[var(--color-primary)] transition-all duration-200 group"
+                className="h-7 w-7 p-0"
                 title="Perfil"
               >
                 <Link href="/profile">
-                  <User2 className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                  <User2 className="h-3.5 w-3.5" />
                 </Link>
               </Button>
 
-              {/* Botão de Colapsar - Movido para dentro do primeiro div quando colapsado */}
               {isCollapsed && (
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setIsCollapsed(false)}
-                  className="h-8 w-8 p-0 text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-subtle)] hover:text-[var(--color-primary)] transition-all duration-200 group"
+                  className="h-7 w-7 p-0"
                   title="Expandir menu"
                 >
-                  <ChevronRight className="h-4 w-4 group-hover:scale-110 group-hover:translate-x-1 transition-transform duration-200" />
+                  <ChevronRight className="h-3.5 w-3.5" />
                 </Button>
               )}
             </div>
 
-            {/* Botão de Colapsar - Mostrado apenas quando expandido */}
             {!isCollapsed && (
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsCollapsed(true)}
-                className="h-8 w-8 p-0 text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-subtle)] hover:text-[var(--color-primary)] transition-all duration-200 group"
+                className="h-7 w-7 p-0"
                 title="Recolher menu"
               >
-                <ChevronLeft className="h-4 w-4 group-hover:scale-110 group-hover:-translate-x-1 transition-transform duration-200" />
+                <ChevronLeft className="h-3.5 w-3.5" />
               </Button>
             )}
           </div>

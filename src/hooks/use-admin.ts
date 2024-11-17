@@ -1,3 +1,5 @@
+'use client'
+
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
@@ -17,18 +19,29 @@ export function useAdmin() {
           return
         }
 
+        // Verificar se o usuário é admin no auth.users
+        const { data: user } = await supabase.auth.getUser()
+        if (user?.user?.role === 'admin') {
+          setIsAdmin(true)
+          setIsLoading(false)
+          return
+        }
+
+        // Se não for admin, verificar na tabela user_roles
         const { data: userRole } = await supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', session.user.id)
           .single()
 
-        if (!userRole || userRole.role !== 'admin') {
-          router.push('/dashboard')
+        if (userRole?.role === 'admin') {
+          setIsAdmin(true)
+          setIsLoading(false)
           return
         }
 
-        setIsAdmin(true)
+        // Se não for admin em nenhum lugar, redirecionar para dashboard
+        router.push('/dashboard')
       } catch (error) {
         console.error('Erro ao verificar permissões:', error)
         router.push('/dashboard')

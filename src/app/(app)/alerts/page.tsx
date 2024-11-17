@@ -1,267 +1,154 @@
 'use client'
 
 import { useState } from 'react'
+import { useNotifications } from '@/hooks/use-notifications'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
-  Bell,
-  Search,
-  Plus,
   Info,
   AlertTriangle,
   XCircle,
   CheckCircle2,
-  Clock,
-  Settings2,
-  Filter,
-  Archive,
-  Megaphone
+  Search,
+  Calendar,
 } from 'lucide-react'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { useAlerts } from '@/hooks/use-alerts'
 import { Badge } from '@/components/ui/badge'
-import { CreateAlertDialog } from '@/components/alerts/create-alert-dialog'
-import { AlertRulesDialog } from '@/components/alerts/alert-rules-dialog'
+import { cn } from '@/lib/utils'
 
-type AlertType = 'info' | 'warning' | 'error' | 'success'
-type AlertCategory = 'story' | 'feature' | 'report' | 'announcement'
-type AlertStatus = 'unread' | 'read' | 'archived'
+interface Alert {
+  id: string
+  title: string
+  message: string
+  type: 'info' | 'warning' | 'error' | 'success'
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+  read: boolean
+  created_at: string
+}
 
 export default function AlertsPage() {
+  const { alerts, isLoading, markAsRead } = useNotifications()
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedType, setSelectedType] = useState<AlertType | 'all'>('all')
-  const [selectedCategory, setSelectedCategory] = useState<AlertCategory | 'all'>('all')
-  const [selectedStatus, setSelectedStatus] = useState<AlertStatus | 'all'>('all')
-  const [isCreateAlertOpen, setIsCreateAlertOpen] = useState(false)
-  const [isRulesOpen, setIsRulesOpen] = useState(false)
-  const { alerts, isLoading, markAsRead, archiveAlert } = useAlerts()
 
-  const getAlertIcon = (type: AlertType) => {
+  const getAlertIcon = (type: Alert['type']) => {
+    const iconClass = "w-4 h-4"
     switch (type) {
-      case 'info':
-        return <Info className="w-5 h-5 text-blue-500" />
-      case 'warning':
-        return <AlertTriangle className="w-5 h-5 text-yellow-500" />
-      case 'error':
-        return <XCircle className="w-5 h-5 text-red-500" />
-      case 'success':
-        return <CheckCircle2 className="w-5 h-5 text-green-500" />
+      case 'info': return <Info className={cn(iconClass, "text-blue-500")} />
+      case 'warning': return <AlertTriangle className={cn(iconClass, "text-yellow-500")} />
+      case 'error': return <XCircle className={cn(iconClass, "text-red-500")} />
+      case 'success': return <CheckCircle2 className={cn(iconClass, "text-green-500")} />
+      default: return <Info className={cn(iconClass, "text-blue-500")} />
     }
   }
 
-  const getCategoryIcon = (category: AlertCategory) => {
-    switch (category) {
-      case 'story':
-        return <Clock className="w-4 h-4" />
-      case 'feature':
-        return <Settings2 className="w-4 h-4" />
-      case 'report':
-        return <Archive className="w-4 h-4" />
-      case 'announcement':
-        return <Megaphone className="w-4 h-4" />
+  const getPriorityColor = (priority: Alert['priority']) => {
+    switch (priority) {
+      case 'low': return 'bg-green-500/10 text-green-500 border-green-500/20'
+      case 'medium': return 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+      case 'high': return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+      case 'urgent': return 'bg-red-500/10 text-red-500 border-red-500/20'
+      default: return 'bg-gray-500/10 text-gray-500 border-gray-500/20'
     }
   }
 
-  const filteredAlerts = alerts?.filter(alert => {
-    const matchesSearch = alert.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      alert.message.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesType = selectedType === 'all' || alert.type === selectedType
-    const matchesCategory = selectedCategory === 'all' || alert.category === selectedCategory
-    const matchesStatus = selectedStatus === 'all' || alert.status === selectedStatus
-    return matchesSearch && matchesType && matchesCategory && matchesStatus
-  })
+  const filteredAlerts = alerts?.filter((alert: Alert) => 
+    alert.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    alert.message.toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-[var(--color-text-primary)]">
-            Alertas e Notificações
-          </h1>
-          <p className="text-sm text-[var(--color-text-secondary)]">
-            Gerencie seus alertas, comunicados e regras de notificação
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            onClick={() => setIsRulesOpen(true)}
-          >
-            <Settings2 className="w-4 h-4 mr-2" />
-            Regras
-          </Button>
-          <Button
-            onClick={() => setIsCreateAlertOpen(true)}
-            className="bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)]"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Alerta
-          </Button>
-        </div>
+    <div className="max-w-[1200px] mx-auto p-6 space-y-6">
+      {/* Header Minimalista */}
+      <div className="flex items-center justify-between pb-6 border-b border-[var(--color-border)]">
+        <h1 className="text-xl font-medium text-[var(--color-text-primary)]">
+          Alertas e Notificações
+        </h1>
       </div>
 
-      {/* Filtros */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
+      {/* Busca */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
           <Input
             placeholder="Buscar alertas..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-9 h-9 bg-transparent"
           />
         </div>
-
-        <Select
-          value={selectedType}
-          onValueChange={(value: AlertType | 'all') => setSelectedType(value)}
-        >
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Tipo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="info">Informação</SelectItem>
-            <SelectItem value="warning">Aviso</SelectItem>
-            <SelectItem value="error">Erro</SelectItem>
-            <SelectItem value="success">Sucesso</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={selectedCategory}
-          onValueChange={(value: AlertCategory | 'all') => setSelectedCategory(value)}
-        >
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Categoria" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas</SelectItem>
-            <SelectItem value="story">História</SelectItem>
-            <SelectItem value="feature">Feature</SelectItem>
-            <SelectItem value="report">Relatório</SelectItem>
-            <SelectItem value="announcement">Comunicado</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={selectedStatus}
-          onValueChange={(value: AlertStatus | 'all') => setSelectedStatus(value)}
-        >
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="unread">Não lido</SelectItem>
-            <SelectItem value="read">Lido</SelectItem>
-            <SelectItem value="archived">Arquivado</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       {/* Lista de Alertas */}
       {isLoading ? (
-        <div className="space-y-4">
+        <div className="grid gap-3">
           {[...Array(3)].map((_, i) => (
-            <Card key={i} className="p-4 animate-pulse">
-              <div className="h-20 bg-[var(--color-background-secondary)] rounded" />
-            </Card>
+            <div key={i} className="h-24 rounded-lg bg-[var(--color-background-subtle)] animate-pulse" />
           ))}
         </div>
       ) : filteredAlerts?.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12">
-          <div className="w-12 h-12 rounded-full bg-[var(--color-background-secondary)] flex items-center justify-center mb-4">
-            <Bell className="w-6 h-6 text-[var(--color-text-secondary)]" />
-          </div>
-          <h3 className="text-lg font-medium text-[var(--color-text-primary)]">
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <AlertTriangle className="w-8 h-8 text-[var(--color-text-secondary)] mb-3" />
+          <p className="text-sm font-medium text-[var(--color-text-primary)]">
             Nenhum alerta encontrado
-          </h3>
-          <p className="text-sm text-[var(--color-text-secondary)]">
+          </p>
+          <p className="text-xs text-[var(--color-text-secondary)] mt-1">
             {searchTerm ? 'Tente buscar com outros termos' : 'Você não tem alertas no momento'}
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {filteredAlerts?.map((alert) => (
-            <Card
-              key={alert.id}
+        <div className="grid gap-3">
+          {filteredAlerts?.map((alert: Alert) => (
+            <Card 
+              key={alert.id} 
               className={cn(
-                "p-4 transition-colors",
-                alert.status === 'unread' && "border-l-4 border-l-[var(--color-primary)]"
+                "p-4 hover:bg-[var(--color-background-subtle)] transition-colors",
+                !alert.read && "border-l-2 border-l-[var(--color-primary)]"
               )}
             >
-              <div className="flex items-start gap-4">
-                <div className="shrink-0">
-                  {getAlertIcon(alert.type)}
-                </div>
+              <div className="flex items-start gap-3">
+                {getAlertIcon(alert.type)}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <h3 className="font-medium text-[var(--color-text-primary)]">
+                      <h3 className="text-sm font-medium text-[var(--color-text-primary)] leading-tight">
                         {alert.title}
                       </h3>
-                      <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+                      <p className="text-xs text-[var(--color-text-secondary)] mt-1 line-clamp-2">
                         {alert.message}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="shrink-0">
-                        <span className="flex items-center gap-1">
-                          {getCategoryIcon(alert.category)}
-                          {alert.category}
-                        </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge className={cn("text-[10px] px-1.5 py-0.5 font-medium border", getPriorityColor(alert.priority))}>
+                        {alert.priority}
                       </Badge>
-                      <span className="text-xs text-[var(--color-text-secondary)]">
-                        {format(new Date(alert.created_at), "dd 'de' MMM 'às' HH:mm", { locale: ptBR })}
-                      </span>
                     </div>
                   </div>
-                  {alert.status === 'unread' && (
-                    <div className="flex items-center gap-2 mt-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => markAsRead(alert.id)}
-                      >
-                        Marcar como lido
-                      </Button>
+                  
+                  <div className="flex items-center gap-4 mt-3">
+                    <div className="flex items-center gap-1.5 text-[10px] text-[var(--color-text-secondary)]">
+                      <Calendar className="w-3 h-3" />
+                      {format(new Date(alert.created_at), "dd MMM, HH:mm", { locale: ptBR })}
+                    </div>
+                    
+                    {!alert.read && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => archiveAlert(alert.id)}
+                        onClick={() => markAsRead.mutate(alert.id)}
+                        className="ml-auto text-xs h-7 px-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                       >
-                        Arquivar
+                        Marcar como lido
                       </Button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             </Card>
           ))}
         </div>
       )}
-
-      {/* Dialogs */}
-      <CreateAlertDialog
-        open={isCreateAlertOpen}
-        onOpenChange={setIsCreateAlertOpen}
-      />
-      <AlertRulesDialog
-        open={isRulesOpen}
-        onOpenChange={setIsRulesOpen}
-      />
     </div>
   )
 } 

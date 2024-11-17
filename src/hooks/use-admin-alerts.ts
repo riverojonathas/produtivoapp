@@ -7,14 +7,9 @@ interface AdminAlert {
   message: string
   type: 'info' | 'warning' | 'error' | 'success'
   priority: 'low' | 'medium' | 'high' | 'urgent'
-  target_type: 'all' | 'specific_users'
-  target_users: string[]
   status: 'draft' | 'scheduled' | 'sent' | 'cancelled'
-  scheduled_for: string | null
-  sent_at: string | null
+  target_type: 'all' | 'specific_users'
   created_at: string
-  created_by: string
-  metadata: Record<string, any>
 }
 
 interface CreateAlertInput {
@@ -23,13 +18,13 @@ interface CreateAlertInput {
   type: AdminAlert['type']
   priority: AdminAlert['priority']
   targetType: AdminAlert['target_type']
-  scheduledFor?: Date | null
   targetUsers?: string[]
 }
 
 export function useAdminAlerts() {
   const queryClient = useQueryClient()
 
+  // Query para buscar alertas
   const query = useQuery<AdminAlert[]>({
     queryKey: ['admin-alerts'],
     queryFn: async () => {
@@ -39,23 +34,22 @@ export function useAdminAlerts() {
         throw new Error('Não autenticado')
       }
 
-      // Verificar se o usuário é admin
-      const { data: user } = await supabase.auth.getUser()
-      if (user?.user?.user_metadata?.role !== 'admin') {
-        throw new Error('Acesso não autorizado')
-      }
-
+      // Buscar todos os alertas ordenados por data de criação
       const { data, error } = await supabase
         .from('admin_alerts')
         .select('*')
         .order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (error) {
+        console.error('Erro ao buscar alertas:', error)
+        throw error
+      }
 
-      return data
+      return data as AdminAlert[]
     }
   })
 
+  // Mutation para criar alerta
   const createAlert = useMutation({
     mutationFn: async (data: CreateAlertInput) => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -71,39 +65,16 @@ export function useAdminAlerts() {
           message: data.message,
           type: data.type,
           priority: data.priority,
+          status: 'sent', // Por padrão, o alerta é enviado imediatamente
           target_type: data.targetType,
           target_users: data.targetUsers || [],
-          status: data.scheduledFor ? 'scheduled' : 'sent',
-          scheduled_for: data.scheduledFor?.toISOString() || null,
-          sent_at: data.scheduledFor ? null : new Date().toISOString(),
-          created_by: session.user.id
+          created_by: session.user.id,
+          created_at: new Date().toISOString()
         }])
 
-      if (error) throw error
-
-      // Se não for agendado, criar os recibos de entrega
-      if (!data.scheduledFor) {
-        if (data.targetType === 'all') {
-          const { data: users } = await supabase
-            .from('users')
-            .select('id')
-
-          if (users) {
-            await supabase
-              .from('admin_alert_receipts')
-              .insert(users.map(user => ({
-                user_id: user.id,
-                status: 'delivered'
-              })))
-          }
-        } else if (data.targetUsers?.length) {
-          await supabase
-            .from('admin_alert_receipts')
-            .insert(data.targetUsers.map(userId => ({
-              user_id: userId,
-              status: 'delivered'
-            })))
-        }
+      if (error) {
+        console.error('Erro ao criar alerta:', error)
+        throw error
       }
     },
     onSuccess: () => {
@@ -111,16 +82,7 @@ export function useAdminAlerts() {
     }
   })
 
-  const scheduleAlert = useMutation({
-    mutationFn: async (data: CreateAlertInput) => {
-      if (!data.scheduledFor) {
-        throw new Error('Data de agendamento é obrigatória')
-      }
-
-      return createAlert.mutateAsync(data)
-    }
-  })
-
+  // Mutation para cancelar alerta
   const cancelAlert = useMutation({
     mutationFn: async (alertId: string) => {
       const { error } = await supabase
@@ -128,7 +90,10 @@ export function useAdminAlerts() {
         .update({ status: 'cancelled' })
         .eq('id', alertId)
 
-      if (error) throw error
+      if (error) {
+        console.error('Erro ao cancelar alerta:', error)
+        throw error
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-alerts'] })
@@ -140,7 +105,6 @@ export function useAdminAlerts() {
     isLoading: query.isLoading,
     error: query.error,
     createAlert,
-    scheduleAlert,
     cancelAlert
   }
 } 

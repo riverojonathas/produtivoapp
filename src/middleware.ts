@@ -13,29 +13,35 @@ export async function middleware(req: NextRequest) {
   // Se não está autenticado
   if (!session) {
     if (req.nextUrl.pathname.startsWith('/dashboard') || 
-        req.nextUrl.pathname.startsWith('/admin')) {
+        req.nextUrl.pathname.startsWith('/admin-alerts') ||
+        req.nextUrl.pathname.startsWith('/alerts')) {
       return NextResponse.redirect(new URL('/login', req.url))
     }
     return res
   }
 
-  // Verificar permissões de admin
-  if (req.nextUrl.pathname.startsWith('/admin')) {
-    const { data: userRole } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', session.user.id)
-      .single()
+  // Verificar se é admin para rotas admin
+  if (req.nextUrl.pathname.startsWith('/admin-alerts')) {
+    const { data: user } = await supabase.auth.getUser()
+    const isAdminUser = user?.user?.role === 'admin'
 
-    console.log('Admin check:', {
-      userId: session.user.id,
-      userRole,
-      path: req.nextUrl.pathname
-    })
+    if (!isAdminUser) {
+      // Verificar na tabela user_roles
+      const { data: userRole } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', session.user.id)
+        .single()
 
-    if (userRole?.role !== 'admin') {
-      return NextResponse.redirect(new URL('/dashboard', req.url))
+      if (userRole?.role !== 'admin') {
+        return NextResponse.redirect(new URL('/dashboard', req.url))
+      }
     }
+  }
+
+  // Se está autenticado e tentando acessar login/signup
+  if (session && (req.nextUrl.pathname === '/login' || req.nextUrl.pathname === '/signup')) {
+    return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 
   return res
@@ -44,7 +50,8 @@ export async function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     '/dashboard/:path*',
-    '/admin/:path*',
+    '/admin-alerts/:path*',
+    '/alerts/:path*',
     '/login',
     '/signup'
   ]
