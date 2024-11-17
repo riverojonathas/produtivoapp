@@ -1,12 +1,12 @@
-'use client';
+'use client'
 
-import { Suspense } from 'react';
-import { ErrorBoundary } from 'react-error-boundary';
-import { Sidebar } from '@/components/sidebar';
-import { Loading } from '@/components/ui/loading';
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import { Toaster } from 'sonner';
+import { Suspense } from 'react'
+import { ErrorBoundary } from 'react-error-boundary'
+import { Sidebar } from '@/components/sidebar'
+import { Loading } from '@/components/ui/loading'
+import { useAuth } from '@/hooks/use-auth'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -18,37 +18,33 @@ function ErrorFallback({ error }: { error: Error }) {
         </p>
       </div>
     </div>
-  );
+  )
 }
 
-export default function AppLayout({
+export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const [isLoading, setIsLoading] = useState(true);
+  const { isAuthenticated, isLoading } = useAuth()
+  const router = useRouter()
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        window.location.href = '/login';
-        return;
-      }
-      
-      setIsLoading(false);
-    };
-
-    checkAuth();
-  }, []);
+    if (!isLoading && !isAuthenticated) {
+      router.replace('/login')
+    }
+  }, [isLoading, isAuthenticated, router])
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loading />
       </div>
-    );
+    )
+  }
+
+  if (!isAuthenticated) {
+    return null
   }
 
   return (
@@ -63,7 +59,6 @@ export default function AppLayout({
           </Suspense>
         </main>
       </div>
-      <Toaster />
     </ErrorBoundary>
-  );
+  )
 } 

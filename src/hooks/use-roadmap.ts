@@ -2,373 +2,187 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { Feature, UserStory } from '@/types/product'
+import { Feature } from '@/types/product'
 
-interface CreateFeatureInput {
+interface CreateStoryInput {
+  feature_id: string
   title: string
   description: {
-    what: string
-    why: string
-    how: string
-    who: string
+    asA: string
+    iWant: string
+    soThat: string
   }
-  status: Feature['status']
-  priority: Feature['priority']
-  start_date: string | null
-  end_date: string | null
-  product_id: string
-  dependencies: string[]
+  acceptance_criteria: string[]
+  status: 'open' | 'in-progress' | 'completed' | 'blocked'
+  points: number
   assignees: string[]
-  tags: string[]
 }
 
 export function useRoadmap(productId?: string) {
   const queryClient = useQueryClient()
 
-  // Função auxiliar para determinar o status da feature baseado nas histórias
-  const determineFeatureStatus = (stories: UserStory[] | undefined, currentStatus: Feature['status']) => {
-    if (!stories || stories.length === 0) return currentStatus
-
-    const totalStories = stories.length
-    const completedStories = stories.filter(s => s.status === 'completed').length
-    const hasBlockedStories = stories.some(s => s.status === 'blocked')
-    const hasInProgressStories = stories.some(s => s.status === 'in-progress')
-
-    if (completedStories === totalStories) {
-      return 'completed' as Feature['status']
-    } else if (currentStatus === 'completed') {
-      // Se era completed e não é mais 100%, volta para planned
-      return 'planned' as Feature['status']
-    } else if (hasBlockedStories) {
-      return 'blocked' as Feature['status']
-    } else if (hasInProgressStories) {
-      return 'in-progress' as Feature['status']
-    }
-
-    return currentStatus
-  }
-
-  // Buscar features
+  // Query para buscar features
   const query = useQuery<Feature[]>({
-    queryKey: ['roadmap', productId],
+    queryKey: ['features', productId],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Usuário não autenticado')
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        throw new Error('Não autenticado')
+      }
 
-      // Buscar features
-      const { data: features, error: featuresError } = await supabase
+      const { data: features, error } = await supabase
         .from('features')
-        .select(`
-          *,
-          stories:stories(*)
-        `)
+        .select('*')
         .eq('product_id', productId)
         .order('created_at', { ascending: false })
 
-      if (featuresError) throw featuresError
+      if (error) throw error
 
-      // Transformar dados do banco para o formato da aplicação
-      return features.map(feature => ({
-        id: feature.id,
-        title: feature.title,
-        description: feature.description,
-        status: feature.status,
-        priority: feature.priority,
-        startDate: new Date(feature.start_date),
-        endDate: new Date(feature.end_date),
-        dependencies: feature.dependencies,
-        assignees: feature.assignees,
-        tags: feature.tags,
-        stories: feature.stories.map((story: any) => ({
-          id: story.id,
-          featureId: story.feature_id,
-          title: story.title,
-          description: story.description,
-          acceptanceCriteria: story.acceptance_criteria,
-          status: story.status,
-          points: story.points,
-          assignees: story.assignees,
-          createdAt: new Date(story.created_at),
-          updatedAt: new Date(story.updated_at)
-        })),
-        createdAt: new Date(feature.created_at),
-        updatedAt: new Date(feature.updated_at)
-      }))
+      return features || []
     },
     enabled: !!productId
   })
 
-  // Criar feature
+  // Query para buscar features do roadmap (apenas com datas)
+  const roadmapQuery = useQuery<Feature[]>({
+    queryKey: ['roadmap', productId],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        throw new Error('Não autenticado')
+      }
+
+      const { data: features, error } = await supabase
+        .from('features')
+        .select('*')
+        .eq('product_id', productId)
+        .not('start_date', 'is', null)
+        .not('end_date', 'is', null)
+        .order('start_date', { ascending: true })
+
+      if (error) throw error
+
+      return features || []
+    },
+    enabled: !!productId
+  })
+
   const createFeature = useMutation({
     mutationFn: async (data: CreateFeatureInput) => {
-      // Primeiro, obter o usuário atual
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      if (userError) throw userError
-      if (!user) throw new Error('Usuário não autenticado')
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (!session) {
+          throw new Error('Não autenticado')
+        }
 
-      // Log para debug
-      console.log('Dados enviados:', { ...data, owner_id: user.id })
-
-      // Criar feature
-      const { data: feature, error: featureError } = await supabase
-        .from('features')
-        .insert([{
+        const newFeature = {
           title: data.title,
           description: data.description,
           status: data.status,
           priority: data.priority,
-          start_date: data.start_date,
-          end_date: data.end_date,
+          start_date: data.start_date || null,
+          end_date: data.end_date || null,
           product_id: data.product_id,
-          owner_id: user.id,
+          owner_id: session.user.id,
           dependencies: data.dependencies || [],
           assignees: data.assignees || [],
           tags: data.tags || []
-        }])
-        .select('*')
-        .single()
-
-      if (featureError) {
-        console.error('Erro ao criar feature:', featureError)
-        throw new Error(featureError.message)
-      }
-
-      return feature
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['features'] })
-      queryClient.invalidateQueries({ queryKey: ['roadmap', productId] })
-    }
-  })
-
-  // Atualizar feature com histórias
-  const updateFeature = useMutation({
-    mutationFn: async (updatedFeature: Feature) => {
-      // Determinar novo status baseado nas histórias
-      const newStatus = determineFeatureStatus(updatedFeature.stories, updatedFeature.status)
-
-      // Log para debug
-      console.log('Atualizando feature:', {
-        ...updatedFeature,
-        status: newStatus
-      })
-
-      // Atualizar feature com novo status
-      const { data: feature, error: featureError } = await supabase
-        .from('features')
-        .update({
-          title: updatedFeature.title,
-          description: updatedFeature.description,
-          status: newStatus, // Usar novo status
-          priority: updatedFeature.priority,
-          start_date: updatedFeature.startDate,
-          end_date: updatedFeature.endDate,
-          dependencies: updatedFeature.dependencies,
-          assignees: updatedFeature.assignees,
-          tags: updatedFeature.tags
-        })
-        .eq('id', updatedFeature.id)
-        .select()
-        .single()
-
-      if (featureError) {
-        console.error('Erro ao atualizar feature:', featureError)
-        throw featureError
-      }
-
-      // Se houver histórias, criar/atualizar
-      if (updatedFeature.stories?.length) {
-        const { error: storiesError } = await supabase
-          .from('stories')
-          .upsert(
-            updatedFeature.stories.map(story => ({
-              id: story.id,
-              title: story.title,
-              description: story.description,
-              status: story.status,
-              points: story.points,
-              feature_id: updatedFeature.id,
-              acceptance_criteria: story.acceptanceCriteria,
-              assignees: story.assignees,
-              created_at: story.createdAt,
-              updated_at: new Date()
-            }))
-          )
-
-        if (storiesError) {
-          console.error('Erro ao atualizar histórias:', storiesError)
-          throw storiesError
         }
+
+        const { data: feature, error } = await supabase
+          .from('features')
+          .insert([newFeature])
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Erro ao criar feature:', error)
+          throw new Error(error.message)
+        }
+
+        return feature
+      } catch (error) {
+        console.error('Erro detalhado:', error)
+        throw error
       }
-
-      return feature
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['features'] })
+      queryClient.invalidateQueries({ queryKey: ['features', productId] })
       queryClient.invalidateQueries({ queryKey: ['roadmap', productId] })
     }
   })
 
-  // Atualizar status da feature
-  const updateFeatureStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: Feature['status'] }) => {
-      const { data, error } = await supabase
-        .from('features')
-        .update({ status })
-        .eq('id', id)
-        .select()
-        .single()
-
-      if (error) throw error
-      return data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['roadmap', productId] })
-    }
-  })
-
-  // Deletar feature
-  const deleteFeature = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('features')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['roadmap', productId] })
-    }
-  })
-
-  // Criar story
   const createStory = useMutation({
-    mutationFn: async (data: Omit<UserStory, 'id' | 'createdAt' | 'updatedAt'>) => {
-      // Log para debug
-      console.log('Criando história:', data)
+    mutationFn: async (data: CreateStoryInput) => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (!session) {
+          throw new Error('Não autenticado')
+        }
 
-      // Primeiro, obter a feature para atualizar suas histórias
-      const { data: feature, error: featureError } = await supabase
-        .from('features')
-        .select('stories')
-        .eq('id', data.featureId)
-        .single()
-
-      if (featureError) {
-        console.error('Erro ao buscar feature:', featureError)
-        throw featureError
-      }
-
-      // Criar nova história
-      const newStory = {
-        id: crypto.randomUUID(),
-        feature_id: data.featureId,
-        title: data.title,
-        description: data.description,
-        acceptance_criteria: data.acceptanceCriteria || [],
-        status: data.status || 'open',
-        points: data.points || 1,
-        assignees: data.assignees || [],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-
-      // Atualizar feature com a nova história
-      const { error: updateError } = await supabase
-        .from('features')
-        .update({
-          stories: [...(feature.stories || []), newStory]
-        })
-        .eq('id', data.featureId)
-
-      if (updateError) {
-        console.error('Erro ao atualizar feature com nova história:', updateError)
-        throw updateError
-      }
-
-      return newStory
-    },
-    onSuccess: () => {
-      // Invalidar queries para atualizar a UI
-      queryClient.invalidateQueries({ queryKey: ['features'] })
-      queryClient.invalidateQueries({ queryKey: ['roadmap', productId] })
-    },
-    onError: (error) => {
-      console.error('Erro na mutation createStory:', error)
-      throw error
-    }
-  })
-
-  // Atualizar story
-  const updateStory = useMutation({
-    mutationFn: async (data: UserStory) => {
-      const { data: story, error } = await supabase
-        .from('stories')
-        .update({
+        const newStory = {
+          feature_id: data.feature_id,
           title: data.title,
           description: data.description,
-          acceptance_criteria: data.acceptanceCriteria,
-          status: data.status,
-          points: data.points,
-          assignees: data.assignees
-        })
-        .eq('id', data.id)
-        .select()
-        .single()
+          acceptance_criteria: data.acceptance_criteria || [],
+          status: data.status || 'open',
+          points: data.points || 1,
+          assignees: data.assignees || [],
+          owner_id: session.user.id
+        }
 
-      if (error) throw error
-      return story
+        const { data: story, error } = await supabase
+          .from('stories')
+          .insert([newStory])
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Erro do Supabase:', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code
+          })
+          throw new Error(`Erro ao criar história: ${error.message}`)
+        }
+
+        return story
+      } catch (error) {
+        console.error('Erro detalhado:', error)
+        throw error
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['roadmap', productId] })
+      queryClient.invalidateQueries({ queryKey: ['features', productId] })
     }
   })
 
-  // Atualizar status da story
-  const updateStoryStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: StoryStatus }) => {
-      const { data, error } = await supabase
-        .from('stories')
+  const updateFeatureStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: Feature['status'] }) => {
+      const { error } = await supabase
+        .from('features')
         .update({ status })
         .eq('id', id)
-        .select()
-        .single()
-
-      if (error) throw error
-      return data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['roadmap', productId] })
-    }
-  })
-
-  // Deletar story
-  const deleteStory = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('stories')
-        .delete()
-        .eq('id', id)
 
       if (error) throw error
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['roadmap', productId] })
+      queryClient.invalidateQueries({ queryKey: ['features', productId] })
     }
   })
 
   return {
-    data: query.data,
-    isLoading: query.isLoading,
-    error: query.error,
+    features: query.data || [],
+    roadmapFeatures: roadmapQuery.data || [],
+    isLoading: query.isLoading || roadmapQuery.isLoading,
+    error: query.error || roadmapQuery.error,
     createFeature,
-    updateFeature,
-    updateFeatureStatus,
-    deleteFeature,
     createStory,
-    updateStory,
-    updateStoryStatus,
-    deleteStory
+    updateFeatureStatus
   }
 } 

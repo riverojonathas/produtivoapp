@@ -518,3 +518,10 @@
     stroke-dashoffset: 0;
   }
 }
+
+.dropdown-content {
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}

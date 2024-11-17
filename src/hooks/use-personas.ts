@@ -4,101 +4,117 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { Persona } from '@/types/product'
 
-export function usePersonas(productId?: string) {
+export function usePersonas() {
   const queryClient = useQueryClient()
 
   const query = useQuery<Persona[]>({
-    queryKey: ['personas', productId],
+    queryKey: ['personas'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Usuário não autenticado')
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (!session) {
+          console.log('Sem sessão ativa')
+          return []
+        }
 
-      const { data, error } = await supabase
-        .from('personas')
-        .select('*')
-        .eq('product_id', productId)
-        .order('created_at', { ascending: false })
+        const { data, error } = await supabase
+          .from('personas')
+          .select(`
+            id,
+            name,
+            description,
+            characteristics,
+            pain_points,
+            goals,
+            product_id,
+            owner_id,
+            created_at,
+            updated_at
+          `)
+          .eq('owner_id', session.user.id)
+          .order('created_at', { ascending: false })
 
-      if (error) throw error
+        if (error) {
+          console.error('Erro do Supabase:', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint
+          })
+          throw new Error(error.message)
+        }
 
-      return data.map(persona => ({
-        ...persona,
-        characteristics: persona.characteristics || [],
-        painPoints: persona.pain_points || [],
-        goals: persona.goals || [],
-        createdAt: new Date(persona.created_at),
-        updatedAt: new Date(persona.updated_at)
-      }))
-    },
-    enabled: !!productId
+        return data || []
+      } catch (error) {
+        if (error instanceof Error) {
+          console.error('Erro detalhado:', {
+            message: error.message,
+            stack: error.stack
+          })
+        }
+        throw error
+      }
+    }
   })
 
   const createPersona = useMutation({
-    mutationFn: async (newPersona: Omit<Persona, 'id' | 'createdAt' | 'updatedAt'>) => {
-      const { data, error } = await supabase
-        .from('personas')
-        .insert({
-          name: newPersona.name,
-          description: newPersona.description,
-          characteristics: newPersona.characteristics,
-          pain_points: newPersona.painPoints,
-          goals: newPersona.goals,
-          product_id: productId
-        })
-        .select()
-        .single()
+    mutationFn: async (data: Partial<Persona>) => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (!session) {
+          throw new Error('Não autenticado')
+        }
 
-      if (error) throw error
-      return data
+        const newPersona = {
+          name: data.name,
+          description: data.description || '',
+          characteristics: data.characteristics || [],
+          pain_points: data.pain_points || [],
+          goals: data.goals || [],
+          product_id: data.product_id || null,
+          owner_id: session.user.id
+        }
+
+        const { data: persona, error } = await supabase
+          .from('personas')
+          .insert([newPersona])
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Erro do Supabase:', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code
+          })
+          throw new Error(`Erro ao criar persona: ${error.message}`)
+        }
+
+        return persona
+      } catch (error) {
+        if (error instanceof Error) {
+          console.error('Erro detalhado na criação:', {
+            message: error.message,
+            stack: error.stack
+          })
+        }
+        throw error
+      }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['personas', productId] })
-    }
-  })
-
-  const updatePersona = useMutation({
-    mutationFn: async (persona: Persona) => {
-      const { data, error } = await supabase
-        .from('personas')
-        .update({
-          name: persona.name,
-          description: persona.description,
-          characteristics: persona.characteristics,
-          pain_points: persona.painPoints,
-          goals: persona.goals
-        })
-        .eq('id', persona.id)
-        .select()
-        .single()
-
-      if (error) throw error
-      return data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['personas', productId] })
-    }
-  })
-
-  const deletePersona = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('personas')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['personas', productId] })
+    onSuccess: (newPersona) => {
+      queryClient.setQueryData<Persona[]>(['personas'], (old = []) => {
+        return [newPersona, ...old]
+      })
+      queryClient.invalidateQueries({ queryKey: ['personas'] })
     }
   })
 
   return {
-    data: query.data,
+    personas: query.data || [],
     isLoading: query.isLoading,
     error: query.error,
-    createPersona,
-    updatePersona,
-    deletePersona
+    createPersona
   }
 } 

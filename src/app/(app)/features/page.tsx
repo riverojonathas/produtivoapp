@@ -75,11 +75,21 @@ export default function FeaturesPage() {
 
   const handleStatusChange = async (id: string, status: Feature['status']) => {
     try {
-      await updateFeatureStatus.mutateAsync({ id, status })
+      console.log('Tentando atualizar status:', { id, status }) // Debug
+      
+      await updateFeatureStatus.mutateAsync({ 
+        id, 
+        status 
+      })
+      
       toast.success('Status atualizado com sucesso!')
     } catch (error) {
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Erro desconhecido ao atualizar status'
+      
       console.error('Erro ao atualizar status:', error)
-      toast.error('Erro ao atualizar status')
+      toast.error(`Erro ao atualizar status: ${errorMessage}`)
     }
   }
 

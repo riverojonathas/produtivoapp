@@ -4,9 +4,10 @@ export interface Product {
   id: string
   created_at: string
   name: string
-  description: string | null
-  status: ProductStatus
+  description: string
+  status: string
   owner_id: string
+  team: string[]
 }
 
 export type ProductCreateInput = Omit<Product, 'id' | 'created_at' | 'status' | 'owner_id'>; 
@@ -55,17 +56,17 @@ export interface Feature {
     how: string
     who: string
   }
-  status: FeatureStatus
-  priority: FeaturePriority
-  startDate: string | null
-  endDate: string | null
+  status: 'backlog' | 'doing' | 'done' | 'blocked'
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+  start_date: string | null
+  end_date: string | null
+  product_id: string
+  owner_id: string
   dependencies: string[]
   assignees: string[]
   tags: string[]
-  productId: string
-  stories?: UserStory[]
-  createdAt: Date
-  updatedAt: Date
+  created_at: string
+  updated_at: string
 }
 
 export interface Milestone {
@@ -98,9 +99,10 @@ export interface Persona {
   name: string
   description: string
   characteristics: string[]
-  painPoints: string[]
+  pain_points: string[]
   goals: string[]
-  productId: string
-  createdAt: Date
-  updatedAt: Date
+  product_id: string | null
+  owner_id: string
+  created_at: string
+  updated_at: string
 } 

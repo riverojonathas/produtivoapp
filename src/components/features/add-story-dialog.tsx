@@ -1,11 +1,10 @@
 'use client'
 
-import { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { UserStory, Feature } from '@/types/product'
+import { UserStory } from '@/types/product'
 import { useForm } from 'react-hook-form'
 import { Form, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import {
@@ -22,32 +21,31 @@ interface AddStoryDialogProps {
   onOpenChange: (open: boolean) => void
   onSubmit: (data: Partial<UserStory>) => Promise<void>
   isSubmitting?: boolean
-  defaultValues?: Partial<UserStory>
+}
+
+const defaultValues: Partial<UserStory> = {
+  featureId: '',
+  title: '',
+  description: {
+    asA: '',
+    iWant: '',
+    soThat: ''
+  },
+  acceptanceCriteria: [],
+  status: 'open',
+  points: 1,
+  assignees: []
 }
 
 export function AddStoryDialog({
   open,
   onOpenChange,
   onSubmit,
-  isSubmitting,
-  defaultValues
+  isSubmitting
 }: AddStoryDialogProps) {
   const { features } = useFeatures()
-
   const form = useForm<UserStory>({
-    defaultValues: defaultValues || {
-      featureId: '',
-      title: '',
-      description: {
-        asA: '',
-        iWant: '',
-        soThat: ''
-      },
-      acceptanceCriteria: [],
-      status: 'open',
-      points: 1,
-      assignees: []
-    }
+    defaultValues
   })
 
   return (
@@ -68,7 +66,7 @@ export function AddStoryDialog({
                 <FormItem>
                   <FormLabel>Feature</FormLabel>
                   <Select
-                    value={field.value || ''}
+                    value={field.value}
                     onValueChange={field.onChange}
                   >
                     <SelectTrigger>
@@ -97,7 +95,6 @@ export function AddStoryDialog({
                   <FormLabel>Título</FormLabel>
                   <Input
                     {...field}
-                    value={field.value || ''}
                     placeholder="Ex: Visualizar notificações não lidas"
                   />
                   <FormMessage />
@@ -105,7 +102,7 @@ export function AddStoryDialog({
               )}
             />
 
-            {/* Descrição no formato "Como [persona], eu quero [ação] para [benefício]" */}
+            {/* Descrição */}
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-[var(--color-text-secondary)]">
                 Descrição
@@ -120,7 +117,6 @@ export function AddStoryDialog({
                     <FormLabel>Como</FormLabel>
                     <Input
                       {...field}
-                      value={field.value || ''}
                       placeholder="Ex: usuário do sistema"
                     />
                     <FormMessage />
@@ -137,7 +133,6 @@ export function AddStoryDialog({
                     <FormLabel>Eu quero</FormLabel>
                     <Input
                       {...field}
-                      value={field.value || ''}
                       placeholder="Ex: visualizar minhas notificações não lidas"
                     />
                     <FormMessage />
@@ -154,7 +149,6 @@ export function AddStoryDialog({
                     <FormLabel>Para que</FormLabel>
                     <Input
                       {...field}
-                      value={field.value || ''}
                       placeholder="Ex: eu possa me manter atualizado sobre as novidades"
                     />
                     <FormMessage />
@@ -171,7 +165,6 @@ export function AddStoryDialog({
                 <FormItem>
                   <FormLabel>Critérios de Aceitação</FormLabel>
                   <Textarea
-                    {...field}
                     value={field.value?.join('\n') || ''}
                     onChange={e => field.onChange(e.target.value.split('\n'))}
                     placeholder="Ex: - Deve mostrar um badge com o número de notificações&#10;- Deve marcar como lida ao clicar&#10;- Deve atualizar em tempo real"
@@ -190,7 +183,7 @@ export function AddStoryDialog({
                 <FormItem>
                   <FormLabel>Story Points</FormLabel>
                   <Select
-                    value={field.value?.toString() || '1'}
+                    value={field.value?.toString()}
                     onValueChange={value => field.onChange(parseInt(value))}
                   >
                     <SelectTrigger>

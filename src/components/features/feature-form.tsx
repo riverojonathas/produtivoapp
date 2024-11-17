@@ -1,8 +1,6 @@
 'use client'
 
-import { useState } from 'react'
-import { Feature, FeatureStatus, FeaturePriority } from '@/types/product'
-import { useFeatureValidation } from '@/hooks/use-feature-validation'
+import { Feature } from '@/types/product'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
@@ -22,39 +20,48 @@ import {
 import { useForm } from 'react-hook-form'
 import { Form, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 
+interface Persona {
+  id: string
+  name: string
+  description: string
+}
+
 interface FeatureFormProps {
   feature?: Feature
-  existingFeatures: Feature[]
   personas?: Persona[]
   onSubmit: (data: Partial<Feature>) => Promise<void>
   isSubmitting?: boolean
   defaultValues?: Partial<Feature>
 }
 
+const initialValues = {
+  title: '',
+  description: {
+    what: '',
+    why: '',
+    how: '',
+    who: ''
+  },
+  status: 'backlog' as const,
+  priority: 'medium' as const,
+  startDate: null,
+  endDate: null,
+  dependencies: [],
+  assignees: [],
+  tags: []
+}
+
 export function FeatureForm({ 
   feature, 
-  existingFeatures, 
-  personas = [],
+  personas = [], 
   onSubmit,
   isSubmitting,
   defaultValues
 }: FeatureFormProps) {
   const form = useForm<Feature>({
-    defaultValues: defaultValues || {
-      title: '',
-      description: {
-        what: '',
-        why: '',
-        how: '',
-        who: ''
-      },
-      status: 'backlog',
-      priority: 'medium',
-      startDate: null,
-      endDate: null,
-      dependencies: [],
-      assignees: [],
-      tags: []
+    defaultValues: {
+      ...initialValues,
+      ...defaultValues
     }
   })
 
@@ -70,6 +77,7 @@ export function FeatureForm({
               <FormLabel>Título</FormLabel>
               <Input
                 {...field}
+                value={field.value || ''}
                 placeholder="Ex: Implementar sistema de notificações"
               />
               <FormMessage />
@@ -91,6 +99,7 @@ export function FeatureForm({
                 <FormLabel>O que é?</FormLabel>
                 <Textarea
                   {...field}
+                  value={field.value || ''}
                   placeholder="Descreva o que é a feature e suas principais funcionalidades"
                 />
                 <FormMessage />
@@ -106,6 +115,7 @@ export function FeatureForm({
                 <FormLabel>Por quê?</FormLabel>
                 <Textarea
                   {...field}
+                  value={field.value || ''}
                   placeholder="Explique o motivo e o valor que essa feature trará"
                 />
                 <FormMessage />
@@ -120,7 +130,7 @@ export function FeatureForm({
               <FormItem>
                 <FormLabel>Para quem?</FormLabel>
                 <Select
-                  value={field.value}
+                  value={field.value || ''}
                   onValueChange={field.onChange}
                 >
                   <SelectTrigger>
@@ -149,7 +159,7 @@ export function FeatureForm({
               <FormItem>
                 <FormLabel>Status</FormLabel>
                 <Select
-                  value={field.value}
+                  value={field.value || 'backlog'}
                   onValueChange={field.onChange}
                 >
                   <SelectTrigger>
@@ -174,7 +184,7 @@ export function FeatureForm({
               <FormItem>
                 <FormLabel>Prioridade</FormLabel>
                 <Select
-                  value={field.value}
+                  value={field.value || 'medium'}
                   onValueChange={field.onChange}
                 >
                   <SelectTrigger>
@@ -224,10 +234,9 @@ export function FeatureForm({
                   >
                     <Calendar
                       mode="single"
-                      selected={field.value}
+                      selected={field.value ? new Date(field.value) : undefined}
                       onSelect={field.onChange}
-                      initialFocus
-                      disabled={(date) => false}
+                      disabled={() => false}
                     />
                   </PopoverContent>
                 </Popover>
@@ -265,10 +274,9 @@ export function FeatureForm({
                   >
                     <Calendar
                       mode="single"
-                      selected={field.value}
+                      selected={field.value ? new Date(field.value) : undefined}
                       onSelect={field.onChange}
-                      initialFocus
-                      disabled={(date) => false}
+                      disabled={() => false}
                     />
                   </PopoverContent>
                 </Popover>
