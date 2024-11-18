@@ -159,8 +159,9 @@ export function Sidebar() {
         {/* Logo */}
         <div className="flex h-14 items-center justify-center border-b border-[var(--color-border)]">
           <div className={cn(
-            'transition-all duration-300 overflow-hidden px-3',
-            isCollapsed && !isMobile ? 'w-8' : 'w-full'
+            'transition-all duration-300 overflow-hidden',
+            isCollapsed && !isMobile ? 'w-8 px-0' : 'w-full px-3',
+            !isCollapsed && 'flex justify-center'
           )}>
             {isCollapsed && !isMobile ? (
               <div className="flex items-center justify-center">
