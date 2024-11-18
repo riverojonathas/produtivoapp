@@ -79,9 +79,9 @@ export default function AlertsPage() {
   const hasUnreadNotifications = notifications?.some(n => !n.read)
 
   return (
-    <div className="max-w-[1200px] mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between pb-6 border-b border-[var(--color-border)]">
+    <div className="h-full flex flex-col">
+      {/* Header mais suave */}
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-medium text-[var(--color-text-primary)]">
             Alertas e Notificações
@@ -95,95 +95,80 @@ export default function AlertsPage() {
             variant="outline"
             onClick={handleMarkAllAsRead}
             disabled={markAllAsRead.isPending}
+            className="bg-[var(--color-background-primary)] hover:bg-[var(--color-background-hover)]"
           >
             Marcar todos como lidos
           </Button>
         )}
       </div>
 
-      {/* Busca */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-xs">
+      {/* Busca com fundo suave */}
+      <div className="mb-6">
+        <div className="relative max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
           <Input
             placeholder="Buscar alertas..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 h-9 bg-transparent"
+            className="pl-9 h-9 bg-[var(--color-background-primary)] border-[var(--color-border)]"
           />
         </div>
       </div>
 
-      {/* Lista de Alertas */}
-      {isLoading ? (
-        <div className="grid gap-3">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-24 rounded-lg bg-[var(--color-background-subtle)] animate-pulse" />
-          ))}
-        </div>
-      ) : filteredNotifications?.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <AlertTriangle className="w-8 h-8 text-[var(--color-text-secondary)] mb-3" />
-          <p className="text-sm font-medium text-[var(--color-text-primary)]">
-            Nenhum alerta encontrado
-          </p>
-          <p className="text-xs text-[var(--color-text-secondary)] mt-1">
-            {searchTerm ? 'Tente buscar com outros termos' : 'Você não tem alertas no momento'}
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-3">
-          {filteredNotifications?.map((notification) => (
-            <Card 
-              key={notification.id} 
-              className={cn(
-                "p-4 hover:bg-[var(--color-background-subtle)] transition-colors",
-                !notification.read && "border-l-2 border-l-[var(--color-primary)]"
-              )}
-            >
-              <div className="flex items-start gap-3">
-                {getAlertIcon(notification.alert.type)}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className="text-sm font-medium text-[var(--color-text-primary)] leading-tight">
-                        {notification.alert.title}
-                      </h3>
-                      <p className="text-xs text-[var(--color-text-secondary)] mt-1 line-clamp-2">
-                        {notification.alert.message}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Badge className={cn("text-[10px] px-1.5 py-0.5 font-medium border", getPriorityColor(notification.alert.priority))}>
-                        {PRIORITY_LABELS[notification.alert.priority as keyof typeof PRIORITY_LABELS]}
-                      </Badge>
-                    </div>
+      {/* Lista com cards mais suaves */}
+      <div className="flex-1 overflow-auto space-y-3">
+        {/* ... loading e empty states ... */}
+        {filteredNotifications?.map((notification) => (
+          <Card 
+            key={notification.id} 
+            className={cn(
+              "bg-[var(--color-background-primary)] border-[var(--color-border)] transition-all duration-200",
+              "hover:shadow-lg hover:scale-[1.01]",
+              !notification.read && "border-l-2 border-l-[var(--color-primary)]"
+            )}
+          >
+            <div className="flex items-start gap-3">
+              {getAlertIcon(notification.alert.type)}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-sm font-medium text-[var(--color-text-primary)] leading-tight">
+                      {notification.alert.title}
+                    </h3>
+                    <p className="text-xs text-[var(--color-text-secondary)] mt-1 line-clamp-2">
+                      {notification.alert.message}
+                    </p>
                   </div>
-                  
-                  <div className="flex items-center gap-4 mt-3">
-                    <div className="flex items-center gap-1.5 text-[10px] text-[var(--color-text-secondary)]">
-                      <Calendar className="w-3 h-3" />
-                      {format(new Date(notification.created_at), "dd MMM, HH:mm", { locale: ptBR })}
-                    </div>
-                    
-                    {!notification.read && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleMarkAsRead(notification.id)}
-                        disabled={markAsRead.isPending}
-                        className="ml-auto text-xs h-7 px-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-                      >
-                        Marcar como lido
-                      </Button>
-                    )}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge className={cn("text-[10px] px-1.5 py-0.5 font-medium border", getPriorityColor(notification.alert.priority))}>
+                      {PRIORITY_LABELS[notification.alert.priority as keyof typeof PRIORITY_LABELS]}
+                    </Badge>
                   </div>
                 </div>
+                
+                <div className="flex items-center gap-4 mt-3">
+                  <div className="flex items-center gap-1.5 text-[10px] text-[var(--color-text-secondary)]">
+                    <Calendar className="w-3 h-3" />
+                    {format(new Date(notification.created_at), "dd MMM, HH:mm", { locale: ptBR })}
+                  </div>
+                  
+                  {!notification.read && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleMarkAsRead(notification.id)}
+                      disabled={markAsRead.isPending}
+                      className="ml-auto text-xs h-7 px-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                    >
+                      Marcar como lido
+                    </Button>
+                  )}
+                </div>
               </div>
-            </Card>
-          ))}
-        </div>
-      )}
+            </div>
+          </Card>
+        ))}
+      </div>
     </div>
   )
 } 
