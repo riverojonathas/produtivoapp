@@ -362,7 +362,11 @@ export default function NewProductPage({ mode = 'create', initialData }: NewProd
     return errors
   }
 
-  const handleNext = () => {
+  const handleNext = (e: React.MouseEvent) => {
+    // Previne o comportamento padrão do formulário
+    e.preventDefault()
+    e.stopPropagation()
+
     console.log('Estado atual antes da validação:', {
       currentStep,
       vision,
@@ -556,7 +560,7 @@ Oferece ${vision.solution}`.trim()
           disabled={createProduct.isPending}
           className="ml-auto bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)]"
         >
-          {mode === 'edit' ? 'Editar Produto' : 'Criar Produto'}
+          {mode === 'edit' ? 'Salvar Alterações' : 'Criar Produto'}
         </Button>
       )}
     </div>
@@ -1329,7 +1333,7 @@ Oferece ${vision.solution}`.trim()
             completedSteps={completedSteps}
             validationErrors={formErrors}
           />
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             {renderCurrentStep()}
             {renderNavigation()}
           </form>

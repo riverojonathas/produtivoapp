@@ -1,13 +1,47 @@
-export type ProductStatus = 'active' | 'inactive' | 'archived'
+export type ProductStatus = 'active' | 'development' | 'archived'
 
 export interface Product {
   id: string
-  created_at: string
   name: string
   description: string
-  status: string
+  status: ProductStatus
   owner_id: string
-  team: string[]
+  created_at: string
+  updated_at?: string
+  avatar_url?: string | null
+  vision?: string | null
+  target_audience?: string | null
+  team?: string[]
+  
+  // Relacionamentos
+  product_risks?: Array<{
+    id: string
+    category: string
+    description: string
+    mitigation: string
+  }>
+  product_metrics?: Array<{
+    id: string
+    type: 'heart' | 'north_star'
+    name: string
+    value: string
+  }>
+  product_tags?: Array<{
+    id: string
+    name: string
+    type: 'priority' | 'phase' | 'category' | 'custom'
+    color?: string
+  }>
+
+  // Contadores calculados
+  risks_count?: number
+  metrics_count?: number
+  tags?: Array<{
+    id: string
+    name: string
+    type: 'priority' | 'phase' | 'category' | 'custom'
+    color?: string
+  }>
 }
 
 export type ProductCreateInput = Omit<Product, 'id' | 'created_at' | 'status' | 'owner_id'>; 
@@ -29,7 +63,7 @@ export interface FeatureDescription {
   notes?: string  // Notas adicionais (opcional)
 }
 
-// Template para User Story usando formato "Como [persona], eu quero [aç��o] para [benefício]"
+// Template para User Story usando formato "Como [persona], eu quero [aço] para [benefício]"
 export interface UserStory {
   id: string
   featureId: string

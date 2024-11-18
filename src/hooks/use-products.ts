@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
+import { ProductStatus } from '@/types/product'
 
 interface Product {
   id: string
@@ -11,7 +12,7 @@ interface Product {
   avatar_url?: string | null
   vision?: string | null
   target_audience?: string | null
-  status?: string
+  status?: ProductStatus
   team?: string[]
   created_at: string
   owner_id: string
@@ -24,7 +25,7 @@ interface CreateProductInput {
   team: string[]
   vision?: string | null
   target_audience?: string | null
-  status?: string
+  status?: ProductStatus
 }
 
 interface CreateProductRiskInput {
@@ -44,11 +45,19 @@ interface CreateProductMetricInput {
 interface UpdateProductInput {
   name?: string
   description?: string
-  status?: string
+  status?: ProductStatus
   team?: string[]
   vision?: string | null
   target_audience?: string | null
   updated_at?: string
+}
+
+interface Tag {
+  id: string
+  name: string
+  type: 'priority' | 'phase' | 'category' | 'custom'
+  color?: string
+  product_id: string
 }
 
 export function useProducts(productId?: string) {
@@ -67,18 +76,38 @@ export function useProducts(productId?: string) {
         .from('products')
         .select(`
           *,
-          risks_count:product_risks(count),
-          metrics_count:product_metrics(count)
+          product_risks (
+            id,
+            category,
+            description,
+            mitigation
+          ),
+          product_metrics (
+            id,
+            type,
+            name,
+            value
+          ),
+          product_tags (
+            id,
+            name,
+            type,
+            color
+          )
         `)
         .eq('owner_id', session.user.id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
 
-      return (data || []).map(product => ({
+      const productsWithCounts = data?.map(product => ({
         ...product,
-        status: product.status || 'active'
-      }))
+        risks_count: product.product_risks?.length || 0,
+        metrics_count: product.product_metrics?.length || 0,
+        tags: product.product_tags || []
+      })) || []
+
+      return productsWithCounts
     }
   })
 
@@ -155,6 +184,10 @@ export function useProducts(productId?: string) {
           throw new Error('Não autenticado')
         }
 
+        if (data.status && !['active', 'development', 'archived'].includes(data.status)) {
+          throw new Error('Status inválido')
+        }
+
         const updateData = {
           ...data,
           updated_at: new Date().toISOString()
@@ -182,11 +215,11 @@ export function useProducts(productId?: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
-      toast.success('Produto atualizado com sucesso')
+      toast.success('Status atualizado com sucesso')
     },
     onError: (error: any) => {
       console.error('Erro na atualização:', error)
-      const message = error?.message || 'Erro ao atualizar produto'
+      const message = error?.message || 'Erro ao atualizar status'
       toast.error(message)
     }
   })
@@ -249,6 +282,12 @@ export function useProducts(productId?: string) {
             type,
             name,
             value
+          ),
+          product_tags (
+            id,
+            name,
+            type,
+            color
           )
         `)
         .eq('id', productId)
@@ -256,9 +295,63 @@ export function useProducts(productId?: string) {
 
       if (error) throw error
 
-      return data
+      return {
+        ...data,
+        risks_count: data.product_risks?.length || 0,
+        metrics_count: data.product_metrics?.length || 0,
+        tags: data.product_tags || []
+      }
     },
     enabled: !!productId
+  })
+
+  const updateProductTags = useMutation({
+    mutationFn: async ({ productId, tags }: { productId: string, tags: Omit<Tag, 'id' | 'product_id'>[] }) => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (!session) {
+          throw new Error('Não autenticado')
+        }
+
+        // Primeiro, remove todas as tags existentes
+        const { error: deleteError } = await supabase
+          .from('product_tags')
+          .delete()
+          .eq('product_id', productId)
+
+        if (deleteError) throw deleteError
+
+        // Se não há novas tags, retorna
+        if (!tags.length) return
+
+        // Insere as novas tags
+        const { data, error } = await supabase
+          .from('product_tags')
+          .insert(
+            tags.map(tag => ({
+              ...tag,
+              product_id: productId
+            }))
+          )
+          .select()
+
+        if (error) throw error
+
+        return data
+      } catch (error) {
+        console.error('Erro ao atualizar tags:', error)
+        throw error
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      toast.success('Tags atualizadas com sucesso')
+    },
+    onError: (error) => {
+      console.error('Erro ao atualizar tags:', error)
+      toast.error('Erro ao atualizar tags')
+    }
   })
 
   return {
@@ -270,6 +363,7 @@ export function useProducts(productId?: string) {
     updateProduct,
     deleteProduct,
     createProductRisk,
-    createProductMetric
+    createProductMetric,
+    updateProductTags
   }
 } 
