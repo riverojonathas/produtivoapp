@@ -252,7 +252,7 @@ const northStarSuggestions = {
     '30 minutos/sessão',
     '5 tarefas/usuário/dia',
     'R$ 100.000/mês',
-    '85% de retenção'
+    '85% de retenão'
   ],
   signals: [
     'Logs de acesso, Eventos de interação',
@@ -277,22 +277,45 @@ const northStarSuggestions = {
   ]
 }
 
-export default function NewProductPage() {
+interface NewProductPageProps {
+  mode?: 'create' | 'edit'
+  initialData?: Product
+}
+
+export default function NewProductPage({ mode = 'create', initialData }: NewProductPageProps) {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState<Step>('basic')
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
+  const [name, setName] = useState(initialData?.name || '')
+  const [description, setDescription] = useState(initialData?.description || '')
   
-  const [vision, setVision] = useState<ProductVision>({
-    targetAudience: '',
-    problem: '',
-    solution: '',
-    metrics: {
-      happiness: '',
-      engagement: '',
-      adoption: '',
-      retention: '',
-      taskSuccess: ''
+  const [vision, setVision] = useState<ProductVision>(() => {
+    if (initialData?.vision) {
+      // Parse da visão do produto
+      const visionLines = initialData.vision.split('\n')
+      return {
+        targetAudience: visionLines[0].replace('Para ', ''),
+        problem: visionLines[1].replace('Que ', ''),
+        solution: visionLines[3].replace('Oferece ', ''),
+        metrics: {
+          happiness: '',
+          engagement: '',
+          adoption: '',
+          retention: '',
+          taskSuccess: ''
+        }
+      }
+    }
+    return {
+      targetAudience: '',
+      problem: '',
+      solution: '',
+      metrics: {
+        happiness: '',
+        engagement: '',
+        adoption: '',
+        retention: '',
+        taskSuccess: ''
+      }
     }
   })
 
@@ -311,7 +334,7 @@ export default function NewProductPage() {
     rationale: ''
   })
 
-  const { createProduct } = useProducts()
+  const { createProduct, createProductRisk, createProductMetric, updateProduct } = useProducts()
 
   const [formErrors, setFormErrors] = useState<Record<Step, string[]>>({
     basic: [],
@@ -380,64 +403,117 @@ export default function NewProductPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // Validar todos os passos antes de enviar
-    let hasErrors = false
-    steps.forEach(step => {
-      const errors = validateStep(step)
-      setFormErrors(prev => ({ ...prev, [step]: errors }))
-      if (errors.length > 0) hasErrors = true
-    })
-    
-    if (hasErrors) {
-      toast.error('Por favor, corrija os erros antes de continuar')
-      return
-    }
 
     try {
-      const productVision = `
-Para ${vision.targetAudience}
+      if (!name.trim()) {
+        toast.error('Nome do produto é obrigatório')
+        return
+      }
+
+      // Formatar a visão do produto
+      const formattedVision = `Para ${vision.targetAudience}
 Que ${vision.problem}
 Nosso ${name}
-Oferece ${vision.solution}
-Medido por:
-- Happiness: ${vision.metrics.happiness}
-- Engagement: ${vision.metrics.engagement}
-- Adoption: ${vision.metrics.adoption}
-- Retention: ${vision.metrics.retention}
-- Task Success: ${vision.metrics.taskSuccess}
-      `.trim()
+Oferece ${vision.solution}`.trim()
 
-      const productRisks = Object.entries(risks)
-        .map(([key, value]) => `
-${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
-Descrição: ${value.description}
-Mitigação: ${value.mitigation}
-        `.trim())
-        .join('\n\n')
+      if (mode === 'edit' && initialData?.id) {
+        // Modo Edição
+        await updateProduct.mutateAsync({
+          id: initialData.id,
+          data: {
+            name,
+            description,
+            vision: formattedVision,
+            target_audience: vision.targetAudience,
+          }
+        })
 
-      const productNorthStar = `
-Métrica: ${northStar.metric}
-Meta: ${northStar.target}
-Sinais: ${northStar.signals}
-Ações: ${northStar.actions}
-Justificativa: ${northStar.rationale}
-      `.trim()
+        toast.success('Produto atualizado com sucesso')
+        router.push('/products')
+        return
+      }
 
-      await createProduct.mutateAsync({
+      // Modo Criação
+      const productData = {
         name,
         description,
-        vision: productVision,
-        risks: productRisks,
-        north_star: productNorthStar,
-        target_audience: vision.targetAudience
-      })
+        owner_id: null, // será preenchido pelo backend
+        team: [],
+        vision: formattedVision,
+        target_audience: vision.targetAudience,
+        status: 'active'
+      }
+
+      console.log('Dados para criação:', productData)
+
+      const product = await createProduct.mutateAsync(productData)
+
+      if (!product?.id) {
+        throw new Error('ID do produto não retornado')
+      }
+
+      // Criar riscos se houver
+      if (risks && Object.values(risks).some(arr => arr.length > 0)) {
+        const riskPromises = Object.entries(risks).flatMap(([category, categoryRisks]) =>
+          categoryRisks
+            .filter(risk => risk.description.trim() && risk.mitigation.trim())
+            .map(risk =>
+              createProductRisk.mutateAsync({
+                product_id: product.id,
+                category: category.replace(/Risks$/, ''),
+                description: risk.description.trim(),
+                mitigation: risk.mitigation.trim()
+              }).catch(error => {
+                console.error(`Erro ao criar risco ${category}:`, error)
+              })
+            )
+        )
+
+        await Promise.all(riskPromises)
+      }
+
+      // Criar métricas HEART se houver
+      if (vision.metrics) {
+        const heartMetricPromises = Object.entries(vision.metrics)
+          .filter(([_, value]) => value.trim())
+          .map(([key, value]) =>
+            createProductMetric.mutateAsync({
+              product_id: product.id,
+              type: 'heart',
+              name: key,
+              value: value.trim()
+            }).catch(error => {
+              console.error(`Erro ao criar métrica HEART ${key}:`, error)
+            })
+          )
+
+        await Promise.all(heartMetricPromises)
+      }
+
+      // Criar métricas North Star se houver
+      if (northStar) {
+        const northStarMetricPromises = Object.entries(northStar)
+          .filter(([_, value]) => value.trim())
+          .map(([name, value]) =>
+            createProductMetric.mutateAsync({
+              product_id: product.id,
+              type: 'north_star',
+              name,
+              value: value.trim()
+            }).catch(error => {
+              console.error(`Erro ao criar métrica North Star ${name}:`, error)
+            })
+          )
+
+        await Promise.all(northStarMetricPromises)
+      }
 
       toast.success('Produto criado com sucesso')
       router.push('/products')
     } catch (error) {
-      console.error('Erro ao criar produto:', error)
-      toast.error('Erro ao criar produto')
+      console.error('Erro detalhado:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao processar produto'
+      toast.error(errorMessage)
     }
   }
 
@@ -480,7 +556,7 @@ Justificativa: ${northStar.rationale}
           disabled={createProduct.isPending}
           className="ml-auto bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)]"
         >
-          {createProduct.isPending ? 'Criando...' : 'Criar Produto'}
+          {mode === 'edit' ? 'Editar Produto' : 'Criar Produto'}
         </Button>
       )}
     </div>
@@ -1169,7 +1245,7 @@ Justificativa: ${northStar.rationale}
               <Textarea
                 value={northStar.rationale}
                 onChange={(e) => setNorthStar({ ...northStar, rationale: e.target.value })}
-                placeholder="Por que esta é a métrica mais importante para o sucesso do produto?"
+                placeholder="Por que esta é a mtrica mais importante para o sucesso do produto?"
                 className={cn(
                   "flex-1 min-h-[100px]",
                   northStar.rationale?.trim() && "border-green-200 focus:border-green-500"
@@ -1216,6 +1292,10 @@ Justificativa: ${northStar.rationale}
     console.log('Completed Steps:', Array.from(completedSteps))
   }, [currentStep, formErrors, completedSteps])
 
+  // Atualizar o título e botões baseado no modo
+  const pageTitle = mode === 'edit' ? 'Editar Produto' : 'Novo Produto'
+  const submitButtonText = mode === 'edit' ? 'Salvar Alterações' : 'Criar Produto'
+
   return (
     <div className="h-full flex flex-col -m-6">
       {/* Header */}
@@ -1231,7 +1311,7 @@ Justificativa: ${northStar.rationale}
           </Button>
           <div>
             <h1 className="text-sm font-medium text-[var(--color-text-primary)]">
-              Novo Produto
+              {pageTitle}
             </h1>
             <p className="text-xs text-[var(--color-text-secondary)]">
               {stepTitles[currentStep]}

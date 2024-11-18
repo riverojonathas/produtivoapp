@@ -19,6 +19,9 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { ProductActionsMenu } from '@/components/products/product-actions-menu'
 import { useRouter } from 'next/navigation'
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Target, Lightbulb, AlertTriangle, ArrowUp } from 'lucide-react'
 
 interface Product {
   id: string
@@ -28,7 +31,24 @@ interface Product {
   team?: string[]
   created_at: string
   owner_id: string
+  avatar_url?: string | null
+  vision?: string | null
+  target_audience?: string | null
+  risks_count?: number
+  metrics_count?: number
 }
+
+interface AvatarProps extends React.ComponentProps<typeof Avatar> {
+  src?: string | null
+}
+
+const ProductAvatar = ({ src, ...props }: AvatarProps) => (
+  <Avatar {...props}>
+    <AvatarFallback className="rounded-lg bg-[var(--color-background-elevated)]">
+      {props.children}
+    </AvatarFallback>
+  </Avatar>
+)
 
 export default function ProductsPage() {
   const { products = [], isLoading } = useProducts()
@@ -42,18 +62,60 @@ export default function ProductsPage() {
   )
 
   const renderGridView = (product: Product) => (
-    <Card key={product.id} className="group bg-[var(--color-background-primary)] hover:bg-[var(--color-background-subtle)] transition-all duration-200">
+    <Card 
+      key={product.id} 
+      className="group bg-[var(--color-background-primary)] hover:bg-[var(--color-background-subtle)] transition-all duration-200"
+    >
       <div className="p-4">
-        <div className="flex items-start justify-between">
+        <div className="flex items-start gap-3">
+          <ProductAvatar 
+            className="w-10 h-10 rounded-lg border border-[var(--color-border)]"
+            src={product.avatar_url}
+          >
+            {product.name.substring(0, 2).toUpperCase()}
+          </ProductAvatar>
+
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-medium text-[var(--color-text-primary)] truncate">
-              {product.name}
-            </h3>
-            <p className="mt-1 text-xs text-[var(--color-text-secondary)] line-clamp-2">
-              {product.description}
-            </p>
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-[var(--color-text-primary)] truncate">
+                  {product.name}
+                </h3>
+                <p className="mt-1 text-xs text-[var(--color-text-secondary)] line-clamp-2">
+                  {product.description}
+                </p>
+              </div>
+              <ProductActionsMenu product={product} />
+            </div>
+
+            {/* Badges de informações */}
+            <div className="mt-3 flex flex-wrap gap-2">
+              {product.target_audience && (
+                <Badge variant="secondary" className="flex items-center gap-1 text-xs">
+                  <Target className="w-3 h-3" />
+                  {product.target_audience}
+                </Badge>
+              )}
+              {product.vision && (
+                <Badge variant="secondary" className="flex items-center gap-1 text-xs">
+                  <Lightbulb className="w-3 h-3" />
+                  Visão definida
+                </Badge>
+              )}
+              {product.risks_count && product.risks_count > 0 && (
+                <Badge variant="secondary" className="flex items-center gap-1 text-xs">
+                  <AlertTriangle className="w-3 h-3" />
+                  {product.risks_count} riscos
+                </Badge>
+              )}
+              {product.metrics_count && product.metrics_count > 0 && (
+                <Badge variant="secondary" className="flex items-center gap-1 text-xs">
+                  <ArrowUp className="w-3 h-3" />
+                  {product.metrics_count} métricas
+                </Badge>
+              )}
+            </div>
           </div>
-          <ProductActionsMenu product={product} />
         </div>
         
         <div className="mt-4 flex items-center justify-between text-xs text-[var(--color-text-secondary)]">
@@ -67,7 +129,7 @@ export default function ProductsPage() {
               <span>0</span>
             </div>
           </div>
-          <span>
+          <span suppressHydrationWarning>
             {format(new Date(product.created_at), "dd MMM, yy", { locale: ptBR })}
           </span>
         </div>
@@ -76,8 +138,18 @@ export default function ProductsPage() {
   )
 
   const renderListView = (product: Product) => (
-    <Card key={product.id} className="group bg-[var(--color-background-primary)] hover:bg-[var(--color-background-subtle)] transition-all duration-200">
+    <Card 
+      key={product.id} 
+      className="group bg-[var(--color-background-primary)] hover:bg-[var(--color-background-subtle)] transition-all duration-200"
+    >
       <div className="p-4 flex items-center gap-4">
+        <ProductAvatar 
+          className="w-10 h-10 rounded-lg border border-[var(--color-border)]"
+          src={product.avatar_url}
+        >
+          {product.name.substring(0, 2).toUpperCase()}
+        </ProductAvatar>
+
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between">
             <div>
@@ -88,6 +160,34 @@ export default function ProductsPage() {
                 {product.description}
               </p>
             </div>
+          </div>
+
+          {/* Badges de informações */}
+          <div className="mt-2 flex flex-wrap gap-2">
+            {product.target_audience && (
+              <Badge variant="secondary" className="flex items-center gap-1 text-xs">
+                <Target className="w-3 h-3" />
+                {product.target_audience}
+              </Badge>
+            )}
+            {product.vision && (
+              <Badge variant="secondary" className="flex items-center gap-1 text-xs">
+                <Lightbulb className="w-3 h-3" />
+                Visão definida
+              </Badge>
+            )}
+            {product.risks_count && product.risks_count > 0 && (
+              <Badge variant="secondary" className="flex items-center gap-1 text-xs">
+                <AlertTriangle className="w-3 h-3" />
+                {product.risks_count} riscos
+              </Badge>
+            )}
+            {product.metrics_count && product.metrics_count > 0 && (
+              <Badge variant="secondary" className="flex items-center gap-1 text-xs">
+                <ArrowUp className="w-3 h-3" />
+                {product.metrics_count} métricas
+              </Badge>
+            )}
           </div>
         </div>
 
@@ -100,7 +200,7 @@ export default function ProductsPage() {
             <ListChecks className="w-3.5 h-3.5" />
             <span>0</span>
           </div>
-          <span>
+          <span suppressHydrationWarning>
             {format(new Date(product.created_at), "dd MMM, yy", { locale: ptBR })}
           </span>
         </div>
