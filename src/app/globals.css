@@ -2,46 +2,56 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  /* Dark Theme (default) */
-  --color-background-primary: #101827;
-  --color-background-elevated: #1f2937;
-  --color-background-subtle: #1f2937;
-  --color-background-hover: #374151;
-  
-  --color-text-primary: #f3f4f6;
-  --color-text-secondary: #9ca3af;
-  
-  --color-border: #374151;
-  
-  --color-primary: #3b82f6;
-  --color-primary-dark: #2563eb;
-  --color-primary-subtle: rgba(59, 130, 246, 0.1);
-  
-  --color-error: #ef4444;
-  --color-error-dark: #dc2626;
-}
+@layer base {
+  :root {
+    /* Tema Light mais suave */
+    --color-background-primary: #f8f9fa;
+    --color-background-elevated: #ffffff;
+    --color-background-subtle: #f3f4f6;
+    --color-background-secondary: #f1f3f5;
 
-[data-theme='light'] {
-  --color-background-primary: #ffffff;
-  --color-background-elevated: #ffffff;
-  --color-background-subtle: #f8fafc;
-  --color-background-hover: #f1f5f9;
-  
-  --color-text-primary: #1e293b;
-  --color-text-secondary: #64748b;
-  
-  --color-border: #e2e8f0;
-  
-  --color-primary: #3b82f6;
-  --color-primary-dark: #2563eb;
-  --color-primary-subtle: #dbeafe;
-  
-  --color-error: #ef4444;
-  --color-error-dark: #dc2626;
+    --color-border: #e9ecef;
+    
+    --color-text-primary: #343a40;
+    --color-text-secondary: #868e96;
+    
+    --color-primary: #228be6;
+    --color-primary-dark: #1971c2;
+    --color-primary-subtle: rgba(34, 139, 230, 0.1);
+    
+    --color-error: #fa5252;
+    --color-success: #40c057;
+    --color-warning: #fd7e14;
+    --color-info: #15aabf;
+  }
+
+  .dark {
+    /* Mantendo o tema Dark como está */
+    --color-background-primary: #0a0a0a;
+    --color-background-elevated: #18181b;
+    --color-background-subtle: #27272a;
+    --color-background-secondary: #1f1f23;
+
+    --color-border: #27272a;
+    
+    --color-text-primary: #fafafa;
+    --color-text-secondary: #71717a;
+    
+    --color-primary: #228be6;
+    --color-primary-dark: #1971c2;
+    --color-primary-subtle: rgba(34, 139, 230, 0.15);
+    
+    --color-error: #fa5252;
+    --color-success: #40c057;
+    --color-warning: #fd7e14;
+    --color-info: #15aabf;
+  }
 }
 
 @layer base {
+  * {
+    @apply border-[var(--color-border)];
+  }
   body {
     @apply bg-[var(--color-background-primary)] text-[var(--color-text-primary)];
   }
