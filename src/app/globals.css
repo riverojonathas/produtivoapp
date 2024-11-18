@@ -26,25 +26,25 @@
   }
 
   .dark {
-    /* Mantendo o tema Dark como está */
-    --color-background-primary: #0a0a0a;
-    --color-background-elevated: #18181b;
-    --color-background-subtle: #27272a;
-    --color-background-secondary: #1f1f23;
+    /* Tema Dark com fundo azul escuro */
+    --color-background-primary: #0f172a;    /* Azul escuro - Slate 900 */
+    --color-background-elevated: #1e293b;   /* Azul escuro mais claro - Slate 800 */
+    --color-background-subtle: #334155;     /* Azul escuro médio - Slate 700 */
+    --color-background-secondary: #1e293b;  /* Azul escuro mais claro - Slate 800 */
 
-    --color-border: #27272a;
+    --color-border: #334155;                /* Slate 700 */
     
-    --color-text-primary: #fafafa;
-    --color-text-secondary: #71717a;
+    --color-text-primary: #f8fafc;         /* Slate 50 */
+    --color-text-secondary: #94a3b8;       /* Slate 400 */
     
-    --color-primary: #228be6;
-    --color-primary-dark: #1971c2;
-    --color-primary-subtle: rgba(34, 139, 230, 0.15);
+    --color-primary: #38bdf8;              /* Sky 400 */
+    --color-primary-dark: #0284c7;         /* Sky 600 */
+    --color-primary-subtle: rgba(56, 189, 248, 0.15);
     
-    --color-error: #fa5252;
-    --color-success: #40c057;
-    --color-warning: #fd7e14;
-    --color-info: #15aabf;
+    --color-error: #f43f5e;                /* Rose 500 */
+    --color-success: #10b981;              /* Emerald 500 */
+    --color-warning: #f59e0b;              /* Amber 500 */
+    --color-info: #06b6d4;                 /* Cyan 500 */
   }
 }
 
@@ -54,6 +54,38 @@
   }
   body {
     @apply bg-[var(--color-background-primary)] text-[var(--color-text-primary)];
+  }
+}
+
+/* Estilos específicos para telas de autenticação e landing page */
+.auth-layout,
+.landing-layout {
+  @apply bg-[var(--color-background-primary)];
+}
+
+/* Ajustes para elementos específicos no tema dark */
+.dark {
+  /* Ajustes para cards e elementos elevados */
+  .card,
+  .elevated {
+    @apply bg-[var(--color-background-elevated)] border-[var(--color-border)];
+  }
+
+  /* Ajustes para inputs e campos de formulário */
+  input,
+  select,
+  textarea {
+    @apply bg-[var(--color-background-subtle)] border-[var(--color-border)];
+  }
+
+  /* Ajustes para botões */
+  .button-primary {
+    @apply bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)];
+  }
+
+  /* Ajustes para elementos sutis */
+  .subtle-element {
+    @apply bg-[var(--color-background-subtle)];
   }
 }
 
