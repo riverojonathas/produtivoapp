@@ -1,19 +1,30 @@
 'use client'
 
 import styles from './logo.module.css'
+import { cn } from "@/lib/utils"
 
-export const Logo = () => {
+interface LogoProps {
+  className?: string
+  collapsed?: boolean
+}
+
+export const Logo: React.FC<LogoProps> = ({ className, collapsed }) => {
   return (
-    <div className={styles.brandIcon}>
+    <div className={cn(
+      styles.brandIcon,
+      collapsed && styles.collapsed,
+      "text-blue-400",
+      className
+    )}>
       <span className={styles.brandIconText}>P</span>
       <div className={styles.brandIconDot} />
     </div>
   )
 }
 
-export const LogoHorizontal = () => {
+export const LogoHorizontal: React.FC<LogoProps> = ({ className }) => {
   return (
-    <div className={styles.brand}>
+    <div className={cn(styles.brand, className)}>
       <div className={styles.brandMain}>
         <h1 className={styles.brandName}>
           Produtivo

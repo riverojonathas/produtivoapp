@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { usePreferences } from "@/hooks/use-preferences"
-import { Logo, LogoHorizontal } from "@/components/ui/logo/index"
+import { Logo, LogoHorizontal } from "@/components/logo"
 import {
   LayoutDashboard,
   Package,
@@ -158,11 +158,19 @@ export function Sidebar() {
       >
         {/* Logo */}
         <div className="flex h-14 items-center justify-center border-b border-[var(--color-border)]">
-          <div className="px-3">
+          <div className={cn(
+            'transition-all duration-300 overflow-hidden px-3',
+            isCollapsed && !isMobile ? 'w-8' : 'w-full'
+          )}>
             {isCollapsed && !isMobile ? (
-              <Logo />
+              <div className="flex items-center justify-center">
+                <Logo 
+                  className="transition-all duration-300"
+                  collapsed={isCollapsed} 
+                />
+              </div>
             ) : (
-              <LogoHorizontal />
+              <LogoHorizontal className="h-[42px]" />
             )}
           </div>
         </div>

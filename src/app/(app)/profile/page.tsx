@@ -13,16 +13,19 @@ import {
   MapPin, 
   Building2,
   ChevronRight,
-  Image as ImageIcon,
-  LogOut
+  LogOut,
+  Monitor,
+  LayoutDashboard,
+  Sun,
+  Moon
 } from 'lucide-react'
-import { Combobox } from '@/components/ui/combobox'
 import { countries, brazilianStates } from '@/data/locations'
 import * as React from 'react'
 import { debounce } from '@/utils/debounce'
 import { Toast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
-import { ProfileField } from '@/components/ui/profile-field'
+import { Button } from '@/components/ui/button'
+import { usePreferences } from '@/hooks/use-preferences'
 
 // Tipos para os campos de seleção
 const ROLES = [
@@ -72,7 +75,29 @@ const formatPhone = (value: string) => {
     .replace(/(\d)(\d{4})$/, '$1-$2')
 }
 
+// Definir interface para os items da seção
+interface ProfileSectionItem {
+  type?: 'text' | 'select' | 'custom'
+  icon?: React.ReactNode
+  label: string
+  value?: string | null
+  placeholder?: string
+  disabled?: boolean
+  required?: boolean
+  options?: Array<{ value: string, label: string }>
+  onChange?: (value: string) => void
+  action?: 'danger' | 'custom'
+  customContent?: React.ReactNode
+  onClick?: () => void
+}
+
+interface ProfileSection {
+  title: string
+  items: ProfileSectionItem[]
+}
+
 export default function ProfilePage() {
+  const { theme, setTheme, density, setDensity } = usePreferences()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState<ProfileFormData>({
     name: '',
@@ -87,7 +112,6 @@ export default function ProfilePage() {
     city: null
   })
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
-  const [showStates, setShowStates] = useState(false)
   
   const supabase = createClientComponentClient()
   const router = useRouter()
@@ -96,6 +120,13 @@ export default function ProfilePage() {
   useEffect(() => {
     loadProfile()
   }, [])
+
+  // Atualizar estado quando o país mudar
+  useEffect(() => {
+    if (formData.country !== 'BR') {
+      setFormData(prev => ({ ...prev, state: null }))
+    }
+  }, [formData.country])
 
   // Carregar dados do perfil
   const loadProfile = async () => {
@@ -178,7 +209,7 @@ export default function ProfilePage() {
   )
 
   // Handler para alterações nos campos
-  const handleFieldChange = (field: keyof ProfileFormData, value: any) => {
+  const handleFieldChange = (field: keyof ProfileFormData, value: string) => {
     setFormData(prev => {
       const newData = { ...prev, [field]: value }
       debouncedSave({ [field]: value })
@@ -232,25 +263,16 @@ export default function ProfilePage() {
 
       setFormData(prev => ({ ...prev, avatar_url: publicUrl }))
       setMessage({ type: 'success', text: 'Avatar atualizado com sucesso!' })
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao fazer upload do avatar:', error)
       setMessage({ 
         type: 'error', 
-        text: error.message || 'Erro ao atualizar avatar. Tente novamente.' 
+        text: error instanceof Error ? error.message : 'Erro ao atualizar avatar. Tente novamente.' 
       })
     } finally {
       setLoading(false)
     }
   }
-
-  useEffect(() => {
-    if (formData.country === 'BR') {
-      setShowStates(true)
-    } else {
-      setShowStates(false)
-      setFormData(prev => ({ ...prev, state: null }))
-    }
-  }, [formData.country])
 
   const handleLogout = async () => {
     try {
@@ -265,39 +287,68 @@ export default function ProfilePage() {
     }
   }
 
-  const sections = [
+  // Funções para manipulação do tema
+  const handleThemeChange = async (newTheme: 'light' | 'dark') => {
+    try {
+      setLoading(true)
+      await setTheme(newTheme)
+    } catch (error) {
+      console.error('Erro ao alterar tema:', error)
+      setMessage({ type: 'error', text: 'Erro ao alterar tema' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDensityChange = async (newDensity: 'compact' | 'comfortable' | 'spacious') => {
+    try {
+      setLoading(true)
+      await setDensity(newDensity)
+    } catch (error) {
+      console.error('Erro ao alterar densidade:', error)
+      setMessage({ type: 'error', text: 'Erro ao alterar densidade' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const sections: ProfileSection[] = [
     {
       title: 'Foto do Perfil',
       items: [
         {
-          icon: <ImageIcon className="w-4 h-4" />,
-          label: 'Alterar foto',
-          value: 'JPG, GIF ou PNG. Máx 2MB',
-          action: 'custom',
+          type: 'custom',
+          label: 'Alterar foto do perfil',
           customContent: (
-            <div className="relative">
-              <div className="w-12 h-12 rounded-full bg-[var(--color-background-secondary)] flex items-center justify-center overflow-hidden">
-                {formData.avatar_url ? (
-                  <img 
-                    src={formData.avatar_url} 
-                    alt="Avatar" 
-                    className="w-full h-full object-cover"
+            <div className="flex items-center gap-4 px-4 py-3">
+              <div className="relative">
+                <div className="w-20 h-20 rounded-full bg-[var(--color-background-secondary)] flex items-center justify-center overflow-hidden">
+                  {formData.avatar_url ? (
+                    <img 
+                      src={formData.avatar_url} 
+                      alt="Avatar" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User2 className="w-8 h-8 text-[var(--color-text-secondary)]" />
+                  )}
+                </div>
+                <label className="absolute bottom-0 right-0 p-1.5 rounded-full bg-[var(--color-primary)] text-white cursor-pointer hover:bg-[var(--color-primary-dark)] transition-colors">
+                  <Camera className="w-4 h-4" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarUpload}
+                    id="avatar-upload"
+                    aria-label="Upload de foto de perfil"
                   />
-                ) : (
-                  <User2 className="w-6 h-6 text-[var(--color-text-secondary)]" />
-                )}
+                </label>
               </div>
-              <label className="absolute bottom-0 right-0 p-1 rounded-full bg-[var(--color-primary)] text-white cursor-pointer hover:bg-[var(--color-primary-dark)] transition-colors">
-                <Camera className="w-3 h-3" />
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleAvatarUpload}
-                  id="avatar-upload"
-                  aria-label="Upload de foto de perfil"
-                />
-              </label>
+              <div>
+                <h3 className="font-medium text-[var(--color-text-primary)]">{formData.name || 'Seu Nome'}</h3>
+                <p className="text-sm text-[var(--color-text-secondary)]">Alterar foto do perfil</p>
+              </div>
             </div>
           )
         }
@@ -308,35 +359,27 @@ export default function ProfilePage() {
       items: [
         {
           type: 'text',
-          icon: <User2 className="w-4 h-4" />,
+          icon: <User2 className="w-5 h-5" />,
           label: 'Nome',
           value: formData.name || '',
           placeholder: 'Seu nome completo',
           required: true,
-          onChange: (value) => handleFieldChange('name', value)
+          onChange: (value: string) => handleFieldChange('name', value)
         },
         {
           type: 'text',
-          icon: <Mail className="w-4 h-4" />,
+          icon: <Mail className="w-5 h-5" />,
           label: 'Email',
           value: formData.email,
           disabled: true
         },
         {
           type: 'text',
-          icon: <Phone className="w-4 h-4" />,
+          icon: <Phone className="w-5 h-5" />,
           label: 'Telefone',
           value: formData.phone || '',
-          placeholder: 'Seu telefone',
-          onChange: (value) => handleFieldChange('phone', formatPhone(value))
-        },
-        {
-          type: 'text',
-          icon: <Building2 className="w-4 h-4" />,
-          label: 'Empresa',
-          value: formData.company || '',
-          placeholder: 'Nome da empresa',
-          onChange: (value) => handleFieldChange('company', value)
+          placeholder: '+55 (00) 00000-0000',
+          onChange: (value: string) => handleFieldChange('phone', formatPhone(value))
         }
       ]
     },
@@ -348,16 +391,22 @@ export default function ProfilePage() {
           icon: <Briefcase className="w-4 h-4" />,
           label: 'Cargo',
           value: formData.role || '',
-          options: ROLES,
-          onChange: (value) => handleFieldChange('role', value)
+          options: Array.from(ROLES).map(role => ({
+            value: role.value,
+            label: role.label
+          })),
+          onChange: (value: string) => handleFieldChange('role', value)
         },
         {
           type: 'select',
           icon: <Package className="w-4 h-4" />,
           label: 'Tipo de Produto',
           value: formData.product_type || '',
-          options: PRODUCT_TYPES,
-          onChange: (value) => handleFieldChange('product_type', value)
+          options: Array.from(PRODUCT_TYPES).map(type => ({
+            value: type.value,
+            label: type.label
+          })),
+          onChange: (value: string) => handleFieldChange('product_type', value)
         }
       ]
     },
@@ -374,13 +423,13 @@ export default function ProfilePage() {
           onChange: (value) => handleFieldChange('country', value)
         },
         ...(formData.country === 'BR' ? [{
-          type: 'select',
+          type: 'select' as const,
           icon: <Building2 className="w-4 h-4" />,
           label: 'Estado',
           value: formData.state || '',
           options: brazilianStates,
           required: true,
-          onChange: (value) => handleFieldChange('state', value)
+          onChange: (value: string) => handleFieldChange('state', value)
         }] : []),
         {
           type: 'text',
@@ -397,78 +446,175 @@ export default function ProfilePage() {
       title: 'Conta',
       items: [
         {
+          type: 'custom',
           icon: <LogOut className="w-4 h-4" />,
           label: 'Sair da conta',
-          value: 'Fazer logout',
-          action: 'danger',
-          onClick: handleLogout
+          customContent: (
+            <button
+              onClick={handleLogout}
+              className="w-full px-4 py-3 flex items-center gap-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="text-sm font-medium">Sair da conta</span>
+              <span className="ml-auto text-sm">Fazer logout</span>
+              <ChevronRight className="w-4 h-4 flex-shrink-0" />
+            </button>
+          )
+        }
+      ]
+    },
+    {
+      title: 'Aparência',
+      items: [
+        {
+          type: 'custom',
+          icon: <Monitor className="w-4 h-4" />,
+          label: 'Tema',
+          customContent: (
+            <div className="flex gap-2">
+              <Button
+                variant={theme === 'light' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleThemeChange('light')}
+                disabled={loading}
+                className="flex items-center gap-2"
+              >
+                <Sun className="w-4 h-4" />
+                Claro
+              </Button>
+              <Button
+                variant={theme === 'dark' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleThemeChange('dark')}
+                disabled={loading}
+                className="flex items-center gap-2"
+              >
+                <Moon className="w-4 h-4" />
+                Escuro
+              </Button>
+            </div>
+          )
+        },
+        {
+          type: 'select',
+          icon: <LayoutDashboard className="w-4 h-4" />,
+          label: 'Densidade',
+          value: density || 'comfortable',
+          options: [
+            { value: 'compact', label: 'Compacta' },
+            { value: 'comfortable', label: 'Confortável' },
+            { value: 'spacious', label: 'Espaçada' }
+          ],
+          onChange: (value) => handleDensityChange(value as 'compact' | 'comfortable' | 'spacious')
         }
       ]
     }
   ]
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <Toast 
-        message={message} 
-        onClose={() => setMessage(null)} 
-      />
-
-      <div className="mb-8">
-        <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">Seu Perfil</h1>
-        <p className="text-sm text-[var(--color-text-secondary)]">
-          Gerencie suas informações pessoais
-        </p>
-      </div>
-
-      <div className="space-y-6">
-        {sections.map((section, index) => (
-          <div key={index} className="space-y-2">
-            <h2 className="text-sm font-medium text-[var(--color-text-secondary)] px-4">
-              {section.title}
-            </h2>
-            <div className="bg-[var(--color-background-elevated)] rounded-lg border border-[var(--color-border)] overflow-hidden divide-y divide-[var(--color-border)]">
-              {section.items.map((item, itemIndex) => {
-                if (item.action === 'custom') {
-                  return (
-                    <div key={itemIndex} className="px-4 py-3">
-                      {item.customContent}
-                    </div>
-                  )
-                }
-
-                if (item.action === 'danger') {
-                  return (
-                    <div
-                      key={itemIndex}
-                      onClick={item.onClick}
-                      className="flex items-center justify-between px-4 py-3 hover:bg-red-50 dark:hover:bg-red-950 cursor-pointer"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="text-red-500">
-                          {item.icon}
-                        </div>
-                        <span className="text-sm text-red-500 font-medium">
-                          {item.label}
-                        </span>
-                      </div>
-                      <span className="text-sm text-red-500">
-                        {item.value}
-                      </span>
-                    </div>
-                  )
-                }
-
-                return (
-                  <ProfileField
+    <div className="min-h-screen bg-[var(--color-background-secondary)] pb-16">
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-[var(--color-background)] rounded-2xl border border-[var(--color-border)] divide-y divide-[var(--color-border)] mb-6">
+          {sections.map((section, index) => (
+            <div key={index} className="px-4 py-3">
+              <h2 className="text-xs font-medium uppercase tracking-wider text-[var(--color-text-secondary)] mb-3">
+                {section.title}
+              </h2>
+              
+              <div className="bg-[var(--color-background-elevated)] rounded-xl border border-[var(--color-border)] overflow-hidden divide-y divide-[var(--color-border)]">
+                {section.items.map((item, itemIndex) => (
+                  <div 
                     key={itemIndex}
-                    {...item}
-                  />
-                )
-              })}
+                    className={cn(
+                      "relative"
+                    )}
+                  >
+                    {item.type === 'custom' ? (
+                      item.customContent
+                    ) : (
+                      <div className={cn(
+                        "flex items-center px-4 py-3 gap-3",
+                        item.action === 'danger' && "text-red-500",
+                        !item.disabled && "cursor-pointer hover:bg-[var(--color-background-secondary)]"
+                      )}>
+                        {item.icon && (
+                          <div className="flex-shrink-0 text-[var(--color-text-secondary)]">
+                            {item.icon}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                              {item.label}
+                            </span>
+                            {item.type === 'text' ? (
+                              <div className="flex-1 min-w-0">
+                                <input
+                                  type="text"
+                                  value={item.value || ''}
+                                  onChange={(e) => item.onChange?.(e.target.value)}
+                                  placeholder={item.placeholder}
+                                  disabled={item.disabled}
+                                  className={cn(
+                                    "w-full px-3 py-1.5 text-sm rounded-lg",
+                                    "bg-[var(--color-background-secondary)]",
+                                    "border border-[var(--color-border)]",
+                                    "text-[var(--color-text-primary)]",
+                                    "placeholder-[var(--color-text-tertiary)]",
+                                    "focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent",
+                                    "disabled:opacity-50 disabled:bg-transparent disabled:border-none disabled:text-right",
+                                    item.disabled ? "text-right" : "text-left"
+                                  )}
+                                />
+                              </div>
+                            ) : item.type === 'select' ? (
+                              <button
+                                onClick={() => {
+                                  // Aqui você pode implementar um modal ou dropdown
+                                  const selectedOption = item.options?.find(opt => opt.value === item.value)
+                                  const newValue = window.prompt(
+                                    `Selecione ${item.label}`,
+                                    selectedOption?.label || ''
+                                  )
+                                  if (newValue) {
+                                    const option = item.options?.find(opt => opt.label === newValue)
+                                    if (option) {
+                                      item.onChange?.(option.value)
+                                    }
+                                  }
+                                }}
+                                className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-[var(--color-background-secondary)] transition-colors"
+                              >
+                                <span className="text-sm text-[var(--color-text-secondary)]">
+                                  {item.options?.find(opt => opt.value === item.value)?.label || 'Selecione...'}
+                                </span>
+                                <ChevronRight className="w-4 h-4 text-[var(--color-text-tertiary)] flex-shrink-0" />
+                              </button>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-[var(--color-text-secondary)] truncate">
+                                  {item.value}
+                                </span>
+                                {!item.disabled && (
+                                  <ChevronRight className="w-4 h-4 text-[var(--color-text-tertiary)] flex-shrink-0" />
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+
+        <Toast 
+          message={message} 
+          onClose={() => setMessage(null)} 
+        />
       </div>
     </div>
   )

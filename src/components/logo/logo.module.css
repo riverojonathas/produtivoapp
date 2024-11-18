@@ -1,62 +1,57 @@
 .brandIcon {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   background-color: transparent;
-  color: var(--color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   transform-origin: center;
-  opacity: 0;
-  animation: fadeInRotate 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 1;
 }
 
 .brandIconText {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.5px;
   transform-origin: center;
+  line-height: 1;
 }
 
 .brandIconDot {
   position: absolute;
-  bottom: 6px;
-  right: 6px;
-  width: 6px;
-  height: 6px;
-  background-color: var(--color-primary);
+  bottom: 4px;
+  right: 4px;
+  width: 4px;
+  height: 4px;
+  background-color: currentColor;
   border-radius: 50%;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   transform-origin: center;
 }
 
 .brand {
-  width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  opacity: 0;
-  animation: fadeInScale 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  align-items: flex-start;
+  gap: 0;
 }
 
 .brandMain {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 4px;
-  transform-origin: center;
+  gap: 0;
 }
 
 .brandName {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--color-text-primary);
   margin: 0;
   letter-spacing: -0.5px;
+  line-height: 1;
   display: flex;
   align-items: center;
 }
@@ -65,67 +60,25 @@
   color: var(--color-primary);
   margin-left: 1px;
   display: inline-block;
-  transform-origin: center;
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .brandTagline {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--color-text-secondary);
   letter-spacing: -0.2px;
-  opacity: 0;
-  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+  margin-top: -2px;
+  line-height: 1;
 }
 
-@keyframes fadeInRotate {
-  from {
-    opacity: 0;
-    transform: rotate(-180deg) scale(0.5);
-  }
-  to {
-    opacity: 1;
-    transform: rotate(0) scale(1);
-  }
-}
-
-@keyframes fadeInScale {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.2);
-  }
-}
-
-/* Animação quando o menu é colapsado */
-:global(.collapsed) .brandIcon {
+/* Animações quando o sidebar é colapsado */
+.collapsed .brandIconText {
   animation: collapseRotate 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 1;
 }
 
-:global(.collapsed) .brandIconDot {
-  animation: collapseDot 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.collapsed .brandIconDot {
+  animation: collapsePulse 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 1;
 }
 
 @keyframes collapseRotate {
@@ -133,19 +86,19 @@
     transform: rotate(0) scale(1);
   }
   50% {
-    transform: rotate(180deg) scale(0.8);
+    transform: rotate(180deg) scale(0.9);
   }
   100% {
     transform: rotate(360deg) scale(1);
   }
 }
 
-@keyframes collapseDot {
+@keyframes collapsePulse {
   0% {
     transform: scale(1);
   }
   50% {
-    transform: scale(0);
+    transform: scale(1.5);
   }
   100% {
     transform: scale(1);

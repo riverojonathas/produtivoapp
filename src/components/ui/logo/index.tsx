@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { cn } from "@/lib/utils"
 
 interface LogoProps {
@@ -10,8 +11,8 @@ export function Logo({ className }: LogoProps) {
   return (
     <div className={cn("flex items-center justify-center", className)}>
       <svg 
-        width="24" 
-        height="24" 
+        width="32" 
+        height="32" 
         viewBox="0 0 24 24" 
         fill="none" 
         xmlns="http://www.w3.org/2000/svg"
@@ -46,10 +47,15 @@ export function Logo({ className }: LogoProps) {
 export function LogoHorizontal({ className }: LogoProps) {
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      <Logo />
-      <span className="font-semibold text-lg text-[var(--color-text-primary)]">
-        Produtivo
-      </span>
+      <Logo className="w-8 h-8" />
+      <div className="flex flex-col">
+        <span className="font-semibold text-lg leading-none text-white">
+          Produtivo
+        </span>
+        <span className="text-[10px] leading-tight text-gray-400">
+          Product Management
+        </span>
+      </div>
     </div>
   )
 } 

@@ -3,46 +3,39 @@
 import React from 'react'
 import Link from 'next/link'
 import { 
-  RocketLaunchIcon, 
-  ChartBarIcon, 
-  UserGroupIcon, 
-  SparklesIcon,
   ArrowRightIcon,
-  LayoutDashboard,
   Package,
   Users,
   ListTodo,
-  BookOpen,
   Target,
   GitBranch,
-  Settings,
   BarChart3,
   Lightbulb,
-  AlertTriangle,
-  LineChart,
-  ArrowUp
+  LineChart
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { LogoHorizontal } from '@/components/ui/logo'
+import { LogoHorizontal } from '@/components/logo'
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-[var(--color-background-primary)]">
+    <div className="min-h-screen bg-[#0f172a]">
       {/* Header/Nav */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[var(--color-background-primary)] border-b border-[var(--color-border)]">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#0f172a]/80 backdrop-blur-lg border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <LogoHorizontal className="h-8" />
+          <div className="flex flex-col items-start justify-center">
+            <LogoHorizontal className="h-[42px]" />
+          </div>
           <div className="flex items-center gap-4">
             <Link 
               href="/signin"
-              className="px-4 py-2 text-[var(--color-text-primary)] hover:text-[var(--color-primary)] transition-colors"
+              className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
             >
               Entrar
             </Link>
             <Button 
-              className="bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)]"
+              className="bg-blue-600 text-white hover:bg-blue-700 rounded-full px-6"
             >
               <Link href="/signup">
                 Começar Grátis
@@ -57,22 +50,22 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto text-center">
           <Badge 
             variant="secondary" 
-            className="mb-6 bg-[var(--color-primary-subtle)] text-[var(--color-primary)]"
+            className="mb-6 bg-blue-600/20 text-blue-400 px-4 py-1.5"
           >
             Gerencie produtos digitais com excelência
           </Badge>
-          <h1 className="text-5xl md:text-6xl font-bold text-[var(--color-text-primary)] mb-6">
+          <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
             Transforme ideias em
-            <span className="text-[var(--color-primary)]"> produtos de sucesso</span>
+            <span className="text-blue-400"> produtos de sucesso</span>
           </h1>
-          <p className="text-xl text-[var(--color-text-secondary)] mb-12 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto">
             Plataforma completa para Product Managers que querem criar, 
             priorizar e acompanhar a evolução dos seus produtos digitais.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               size="lg"
-              className="bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)]"
+              className="bg-blue-600 text-white hover:bg-blue-700"
             >
               <Link href="/signup" className="flex items-center gap-2">
                 Começar Agora
@@ -82,6 +75,7 @@ export default function LandingPage() {
             <Button
               size="lg"
               variant="outline"
+              className="border-white/10 text-white hover:bg-white/5"
             >
               <Link href="#features">
                 Ver Recursos
@@ -92,16 +86,16 @@ export default function LandingPage() {
       </section>
 
       {/* Features Grid */}
-      <section id="features" className="py-24 px-6 bg-[var(--color-background-secondary)]">
+      <section id="features" className="py-24 px-6 bg-[#1a2744]">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <Badge 
               variant="secondary" 
-              className="mb-4 bg-[var(--color-primary-subtle)] text-[var(--color-primary)]"
+              className="mb-4 bg-blue-950 text-blue-400"
             >
               Recursos
             </Badge>
-            <h2 className="text-3xl font-bold text-[var(--color-text-primary)]">
+            <h2 className="text-3xl font-bold text-white">
               Tudo que você precisa em um só lugar
             </h2>
           </div>
@@ -147,20 +141,20 @@ export default function LandingPage() {
             ].map((feature, index) => (
               <Card
                 key={index}
-                className="p-6 bg-[var(--color-background-elevated)] hover:shadow-lg transition-all duration-300 group cursor-pointer border-[var(--color-border)]"
+                className="p-6 bg-[#18181B] hover:shadow-lg transition-all duration-300 group cursor-pointer border-white/10"
               >
-                <div className="w-12 h-12 rounded-lg bg-[var(--color-primary-subtle)] text-[var(--color-primary)] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                <div className="w-12 h-12 rounded-lg bg-blue-950 text-blue-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                   <feature.icon className="w-6 h-6" />
                 </div>
                 <div className="flex items-start justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+                  <h3 className="text-lg font-semibold text-white">
                     {feature.title}
                   </h3>
-                  <Badge variant="secondary" className="text-[10px]">
+                  <Badge variant="secondary" className="text-[10px] bg-[#27272A] text-gray-300">
                     {feature.badge}
                   </Badge>
                 </div>
-                <p className="text-[var(--color-text-secondary)]">
+                <p className="text-gray-400">
                   {feature.description}
                 </p>
               </Card>
@@ -170,19 +164,19 @@ export default function LandingPage() {
       </section>
 
       {/* Framework Section */}
-      <section className="py-24 px-6">
+      <section className="py-24 px-6 bg-[#0f172a]">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <Badge 
               variant="secondary" 
-              className="mb-4 bg-[var(--color-primary-subtle)] text-[var(--color-primary)]"
+              className="mb-4 bg-blue-950 text-blue-400"
             >
               Frameworks
             </Badge>
-            <h2 className="text-3xl font-bold text-[var(--color-text-primary)] mb-4">
+            <h2 className="text-3xl font-bold text-white mb-4">
               Metodologias comprovadas
             </h2>
-            <p className="text-[var(--color-text-secondary)] max-w-2xl mx-auto">
+            <p className="text-gray-400 max-w-2xl mx-auto">
               Use frameworks reconhecidos pelo mercado para tomar melhores decisões
             </p>
           </div>
@@ -210,17 +204,17 @@ export default function LandingPage() {
             ].map((framework, index) => (
               <Card
                 key={index}
-                className="p-6 bg-[var(--color-background-elevated)] border-[var(--color-border)]"
+                className="p-6 bg-[#18181B] hover:shadow-lg transition-all duration-300 group cursor-pointer border-white/10"
               >
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-[var(--color-primary-subtle)] text-[var(--color-primary)] flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-lg bg-blue-950 text-blue-400 flex items-center justify-center">
                     <framework.icon className="w-5 h-5" />
                   </div>
-                  <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+                  <h3 className="text-lg font-semibold text-white">
                     {framework.title}
                   </h3>
                 </div>
-                <p className="text-[var(--color-text-secondary)] mb-4">
+                <p className="text-gray-400 mb-4">
                   {framework.description}
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -228,7 +222,7 @@ export default function LandingPage() {
                     <Badge 
                       key={i}
                       variant="secondary" 
-                      className="bg-[var(--color-background-subtle)]"
+                      className="bg-[#27272A] text-gray-300"
                     >
                       {metric}
                     </Badge>
@@ -241,7 +235,7 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 px-6 bg-[var(--color-background-secondary)]">
+      <section className="py-24 px-6 bg-[#1a2744]">
         <div className="max-w-7xl mx-auto text-center">
           <Badge 
             variant="secondary" 
@@ -269,19 +263,19 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 px-6 border-t border-[var(--color-border)]">
+      <footer className="py-8 px-6 border-t border-white/10 bg-[#0f172a]">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="text-[var(--color-text-secondary)]">
-            © 2024 Produtivo. Todos os direitos reservados.
+          <div className="text-gray-400">
+            © 
           </div>
           <div className="flex gap-6">
-            <Link href="#" className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]">
+            <Link href="#" className="text-gray-400 hover:text-white">
               Termos
             </Link>
-            <Link href="#" className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]">
+            <Link href="#" className="text-gray-400 hover:text-white">
               Privacidade
             </Link>
-            <Link href="#" className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]">
+            <Link href="#" className="text-gray-400 hover:text-white">
               Contato
             </Link>
           </div>
