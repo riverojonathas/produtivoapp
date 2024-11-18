@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { useTheme } from "@/hooks/use-theme"
+import { usePreferences } from "@/hooks/use-preferences"
 import { Logo, LogoHorizontal } from "@/components/ui/logo/index"
 import {
   LayoutDashboard,
@@ -20,7 +20,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
-  X,
   Bell,
   AlertTriangle,
   User2,
@@ -87,7 +86,7 @@ const menuItems = [
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { theme, toggleTheme } = useTheme()
+  const { theme, setTheme } = usePreferences()
   const { isCollapsed, setIsCollapsed } = useAutoCollapse()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const { isAdmin } = useAdmin()
@@ -114,6 +113,14 @@ export function Sidebar() {
   const filteredMenuItems = menuItems.filter(item => 
     !item.adminOnly || (item.adminOnly && isAdmin)
   )
+
+  const handleThemeToggle = async () => {
+    try {
+      await setTheme(theme === 'light' ? 'dark' : 'light')
+    } catch (error) {
+      console.error('Erro ao alternar tema:', error)
+    }
+  }
 
   return (
     <>
@@ -215,14 +222,14 @@ export function Sidebar() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={toggleTheme}
+                onClick={handleThemeToggle}
                 className="h-7 w-7 p-0"
                 title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
               >
                 {theme === 'dark' ? (
-                  <Moon className="h-3.5 w-3.5" />
-                ) : (
                   <Sun className="h-3.5 w-3.5" />
+                ) : (
+                  <Moon className="h-3.5 w-3.5" />
                 )}
               </Button>
 
