@@ -18,72 +18,46 @@ interface CreateFeatureInput {
   start_date?: string | null
   end_date?: string | null
   product_id: string
-  owner_id: string | null
+  owner_id?: string | null
   dependencies?: string[]
   assignees?: string[]
   tags?: string[]
   progress?: number
 }
 
-interface CreateFeaturePrioritizationInput {
-  feature_id: string
-  method: 'rice' | 'moscow'
-  reach?: number
-  impact?: number
-  confidence?: number
-  effort?: number
-  moscow_priority?: 'must' | 'should' | 'could' | 'wont'
-  notes?: string
-}
-
 export function useFeatures(featureId?: string) {
   const queryClient = useQueryClient()
 
+  // Query para listar features
   const query = useQuery<Feature[]>({
     queryKey: ['features'],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session) {
-        throw new Error('Não autenticado')
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (!session) {
+          throw new Error('Não autenticado')
+        }
+
+        const { data, error } = await supabase
+          .from('features')
+          .select('*')
+          .order('created_at', { ascending: false })
+
+        if (error) {
+          console.error('Erro ao listar features:', error)
+          throw error
+        }
+
+        return data || []
+      } catch (error) {
+        console.error('Erro na query:', error)
+        throw error
       }
-
-      const { data, error } = await supabase
-        .from('features')
-        .select(`
-          *,
-          prioritization:feature_prioritizations (
-            id,
-            method,
-            reach,
-            impact,
-            confidence,
-            effort,
-            moscow_priority,
-            notes
-          ),
-          personas:feature_personas (
-            id,
-            persona:personas (
-              id,
-              name
-            )
-          ),
-          product:products (
-            id,
-            name,
-            status
-          )
-        `)
-        .eq('owner_id', session.user.id)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-
-      return data || []
     }
   })
 
+  // Mutation para criar feature
   const createFeature = useMutation({
     mutationFn: async (input: CreateFeatureInput) => {
       try {
@@ -93,20 +67,50 @@ export function useFeatures(featureId?: string) {
           throw new Error('Usuário não autenticado')
         }
 
+        // Validações
+        if (!input.title?.trim()) {
+          throw new Error('Título é obrigatório')
+        }
+
+        if (!input.product_id) {
+          throw new Error('ID do produto é obrigatório')
+        }
+
+        // Preparar dados
         const featureData = {
-          ...input,
+          title: input.title.trim(),
+          description: input.description,
+          status: input.status,
+          priority: input.priority,
+          start_date: input.start_date || null,
+          end_date: input.end_date || null,
+          product_id: input.product_id,
           owner_id: session.user.id,
+          dependencies: input.dependencies || [],
+          assignees: input.assignees || [],
+          tags: input.tags || [],
+          progress: input.progress || 0,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
 
+        console.log('Dados para inserção:', featureData)
+
+        // Inserir feature
         const { data, error } = await supabase
           .from('features')
-          .insert(featureData)
+          .insert([featureData])
           .select()
           .single()
 
-        if (error) throw error
+        if (error) {
+          console.error('Erro do Supabase:', error)
+          throw new Error(error.message)
+        }
+
+        if (!data) {
+          throw new Error('Feature não foi criada')
+        }
 
         return data
       } catch (error) {
@@ -117,39 +121,41 @@ export function useFeatures(featureId?: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['features'] })
       toast.success('Feature criada com sucesso')
+    },
+    onError: (error: Error) => {
+      console.error('Erro na mutação:', error)
+      toast.error(error.message || 'Erro ao criar feature')
     }
   })
 
-  const createFeaturePrioritization = useMutation({
-    mutationFn: async (input: CreateFeaturePrioritizationInput) => {
+  // Query para buscar uma feature específica
+  const getFeature = useQuery({
+    queryKey: ['feature', featureId],
+    queryFn: async () => {
+      if (!featureId) return null
+
       const { data, error } = await supabase
-        .from('feature_prioritizations')
-        .insert({
-          ...input,
-          created_at: new Date().toISOString(),
-          created_by: (await supabase.auth.getSession()).data.session?.user.id
-        })
-        .select()
+        .from('features')
+        .select('*')
+        .eq('id', featureId)
         .single()
 
-      if (error) throw error
-      return data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['features'] })
-    }
-  })
-
-  const updateFeature = useMutation({
-    mutationFn: async ({ id, data }: { id: string, data: Partial<Feature> }) => {
-      const updateData = {
-        ...data,
-        updated_at: new Date().toISOString()
+      if (error) {
+        console.error('Erro ao buscar feature:', error)
+        throw error
       }
 
+      return data
+    },
+    enabled: !!featureId
+  })
+
+  // Mutation para atualizar feature
+  const updateFeature = useMutation({
+    mutationFn: async ({ id, data }: { id: string, data: Partial<Feature> }) => {
       const { data: updatedFeature, error } = await supabase
         .from('features')
-        .update(updateData)
+        .update({ ...data, updated_at: new Date().toISOString() })
         .eq('id', id)
         .select()
         .single()
@@ -163,6 +169,7 @@ export function useFeatures(featureId?: string) {
     }
   })
 
+  // Mutation para excluir feature
   const deleteFeature = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -178,45 +185,6 @@ export function useFeatures(featureId?: string) {
     }
   })
 
-  const getFeature = useQuery({
-    queryKey: ['feature', featureId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('features')
-        .select(`
-          *,
-          prioritization:feature_prioritizations (
-            id,
-            method,
-            reach,
-            impact,
-            confidence,
-            effort,
-            moscow_priority,
-            notes
-          ),
-          personas:feature_personas (
-            id,
-            persona:personas (
-              id,
-              name
-            )
-          ),
-          product:products (
-            id,
-            name,
-            status
-          )
-        `)
-        .eq('id', featureId)
-        .single()
-
-      if (error) throw error
-      return data
-    },
-    enabled: !!featureId
-  })
-
   return {
     features: query.data,
     feature: getFeature.data,
@@ -224,7 +192,6 @@ export function useFeatures(featureId?: string) {
     error: query.error || getFeature.error,
     createFeature,
     updateFeature,
-    deleteFeature,
-    createFeaturePrioritization
+    deleteFeature
   }
 } 

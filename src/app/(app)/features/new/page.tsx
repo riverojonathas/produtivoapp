@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useProducts } from '@/hooks/use-products'
 
 type Step = 'basic' | 'description' | 'prioritization'
 
@@ -30,17 +31,13 @@ interface FeatureForm {
   }
   status: 'backlog' | 'doing' | 'done' | 'blocked'
   priority: 'low' | 'medium' | 'high' | 'urgent'
-  start_date?: string
-  end_date?: string
+  start_date?: string | null
+  end_date?: string | null
   product_id: string
   dependencies: string[]
   assignees: string[]
   tags: string[]
-  rice_reach?: number
-  rice_impact?: number
-  rice_confidence?: number
-  rice_effort?: number
-  moscow_priority?: 'must' | 'should' | 'could' | 'wont'
+  progress?: number
 }
 
 const steps: Step[] = ['basic', 'description', 'prioritization']
@@ -54,6 +51,7 @@ const stepTitles = {
 export default function NewFeaturePage() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState<Step>('basic')
+  const { products } = useProducts()
   const [formData, setFormData] = useState<FeatureForm>({
     title: '',
     description: {
@@ -67,7 +65,8 @@ export default function NewFeaturePage() {
     product_id: '',
     dependencies: [],
     assignees: [],
-    tags: []
+    tags: [],
+    progress: 0
   })
 
   const { createFeature } = useFeatures()
@@ -81,16 +80,43 @@ export default function NewFeaturePage() {
         return
       }
 
-      await createFeature.mutateAsync({
+      if (!formData.product_id) {
+        toast.error('Selecione um produto')
+        return
+      }
+
+      if (!formData.description.what.trim() || 
+          !formData.description.why.trim() || 
+          !formData.description.how.trim() || 
+          !formData.description.who.trim()) {
+        toast.error('Todos os campos da descrição são obrigatórios')
+        return
+      }
+
+      const featureData = {
         ...formData,
-        owner_id: null // será preenchido pelo backend
-      })
+        dependencies: formData.dependencies || [],
+        assignees: formData.assignees || [],
+        tags: formData.tags || [],
+        start_date: formData.start_date || null,
+        end_date: formData.end_date || null,
+        progress: formData.progress || 0,
+        owner_id: null
+      }
+
+      console.log('Enviando dados:', featureData)
+
+      const result = await createFeature.mutateAsync(featureData)
+
+      if (!result) {
+        throw new Error('Erro ao criar feature')
+      }
 
       toast.success('Feature criada com sucesso')
       router.push('/features')
     } catch (error) {
       console.error('Erro ao criar feature:', error)
-      toast.error('Erro ao criar feature')
+      toast.error(error instanceof Error ? error.message : 'Erro ao criar feature')
     }
   }
 
@@ -113,13 +139,35 @@ export default function NewFeaturePage() {
       case 'basic':
         return (
           <div className="space-y-6">
-            <Input
-              value={formData.title}
-              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              placeholder="Título da feature"
-              required
-            />
-            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Produto</label>
+              <Select
+                value={formData.product_id}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, product_id: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o produto" />
+                </SelectTrigger>
+                <SelectContent>
+                  {products?.map(product => (
+                    <SelectItem key={product.id} value={product.id}>
+                      {product.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Título</label>
+              <Input
+                value={formData.title}
+                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="Título da feature"
+                required
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Status</label>
