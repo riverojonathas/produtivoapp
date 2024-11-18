@@ -1,124 +1,172 @@
 'use client'
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { FeatureForm } from './feature-form'
-import { useRoadmap } from '@/hooks/use-roadmap'
-import { useProducts } from '@/hooks/use-products'
-import { usePersonas } from '@/hooks/use-personas'
-import { Feature } from '@/types/product'
+import { useState } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { useFeatures } from '@/hooks/use-features'
 import { toast } from 'sonner'
+import { Calendar } from "@/components/ui/calendar"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { CalendarIcon } from "lucide-react"
+import { format } from "date-fns"
+import { ptBR } from "date-fns/locale"
+import { cn } from "@/lib/utils"
 
 interface AddFeatureDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onSuccess?: () => void
 }
 
-export function AddFeatureDialog({ open, onOpenChange }: AddFeatureDialogProps) {
-  const { createFeature } = useRoadmap()
-  const { products } = useProducts()
-  const { personas } = usePersonas()
+export function AddFeatureDialog({ open, onOpenChange, onSuccess }: AddFeatureDialogProps) {
+  const { features = [], updateFeature } = useFeatures()
+  const [selectedFeature, setSelectedFeature] = useState<string>('')
+  const [startDate, setStartDate] = useState<Date>()
+  const [endDate, setEndDate] = useState<Date>()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const defaultValues = {
-    status: 'backlog' as const,
-    priority: 'medium' as const,
-    start_date: null,
-    end_date: null,
-    dependencies: [],
-    assignees: [],
-    tags: []
-  }
-
-  const handleSubmit = async (data: Partial<Feature>) => {
+  const handleSubmit = async () => {
     try {
-      if (!data.product_id) {
-        throw new Error('Selecione um produto')
+      setIsSubmitting(true)
+
+      if (!selectedFeature) {
+        toast.error('Selecione uma feature')
+        return
       }
 
-      const formattedData = {
-        title: data.title || '',
-        description: data.description || {
-          what: '',
-          why: '',
-          how: '',
-          who: ''
-        },
-        status: data.status || defaultValues.status,
-        priority: data.priority || defaultValues.priority,
-        start_date: data.start_date,
-        end_date: data.end_date,
-        product_id: data.product_id,
-        dependencies: data.dependencies || [],
-        assignees: data.assignees || [],
-        tags: data.tags || []
+      if (!startDate || !endDate) {
+        toast.error('Selecione as datas de início e fim')
+        return
       }
 
-      await createFeature.mutateAsync(formattedData)
-      
-      toast.success('Feature criada com sucesso!')
+      await updateFeature.mutateAsync({
+        id: selectedFeature,
+        data: {
+          start_date: startDate.toISOString(),
+          end_date: endDate.toISOString()
+        }
+      })
+
+      toast.success('Feature adicionada ao roadmap')
+      onSuccess?.()
       onOpenChange(false)
     } catch (error) {
-      console.error('Erro ao criar feature:', error)
-      toast.error(error instanceof Error ? error.message : 'Erro ao criar feature')
+      console.error('Erro ao adicionar feature:', error)
+      toast.error('Erro ao adicionar feature ao roadmap')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
+  const availableFeatures = features.filter(f => !f.start_date || !f.end_date)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Nova Feature</DialogTitle>
+          <DialogTitle>Adicionar Feature ao Roadmap</DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Formulário Principal */}
-          <div>
-            <FeatureForm
-              personas={personas || []}
-              products={products || []}
-              onSubmit={handleSubmit}
-              isSubmitting={createFeature.isPending}
-              defaultValues={defaultValues}
-            />
+        <div className="grid gap-4 py-4">
+          {/* Seleção de Feature */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Feature</label>
+            <select
+              value={selectedFeature}
+              onChange={(e) => setSelectedFeature(e.target.value)}
+              className="w-full h-9 rounded-md border border-[var(--color-border)] bg-[var(--color-background-primary)] px-3 text-sm"
+            >
+              <option value="">Selecione uma feature...</option>
+              {availableFeatures.map(feature => (
+                <option key={feature.id} value={feature.id}>
+                  {feature.title}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* Personas */}
-          <div>
-            <h3 className="text-sm font-medium mb-4">
-              Para quem
-            </h3>
-            <div className="space-y-3">
-              {personas?.length > 0 ? (
-                personas.map(persona => (
-                  <div
-                    key={persona.id}
-                    className="p-4 bg-[var(--color-background-elevated)] rounded-lg border border-[var(--color-border)] hover:border-[var(--color-border-hover)] transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-[var(--color-background-secondary)] flex items-center justify-center shrink-0">
-                        <span className="text-sm font-medium text-[var(--color-text-secondary)]">
-                          {persona.name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-[var(--color-text-primary)]">
-                          {persona.name}
-                        </h4>
-                        <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2">
-                          {persona.description}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-[var(--color-text-secondary)]">
-                    Nenhuma persona encontrada. Crie uma persona primeiro.
-                  </p>
-                </div>
-              )}
-            </div>
+          {/* Data de Início */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Data de Início</label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !startDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {startDate ? format(startDate, "PPP", { locale: ptBR }) : "Selecione uma data"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={startDate}
+                  onSelect={setStartDate}
+                  initialFocus
+                  locale={ptBR}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
+
+          {/* Data de Término */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Data de Término</label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !endDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {endDate ? format(endDate, "PPP", { locale: ptBR }) : "Selecione uma data"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={endDate}
+                  onSelect={setEndDate}
+                  initialFocus
+                  locale={ptBR}
+                  disabled={(date) => startDate ? date < startDate : false}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting || !selectedFeature || !startDate || !endDate}
+          >
+            {isSubmitting ? 'Adicionando...' : 'Adicionar'}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

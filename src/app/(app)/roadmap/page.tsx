@@ -1,53 +1,108 @@
 'use client'
 
 import { useState } from 'react'
-import { useFeatures } from '@/hooks/use-features'
-import { TimelineView } from '@/components/roadmap'
-import { AddFeatureDialog } from '@/components/roadmap/add-feature-dialog'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { 
+  Search, 
   Plus, 
-  Filter,
-  Share2,
-  Download,
-  Search,
-  ChevronRight,
-  ChevronLeft,
+  Calendar,
   CalendarDays,
   CalendarRange,
   CalendarClock,
-  Calendar,
   ZoomIn,
-  ZoomOut
+  ZoomOut,
+  Share2,
+  Download,
+  Filter,
+  Target,
+  Clock,
+  AlertTriangle,
+  CheckCircle2
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { useFeatures } from '@/hooks/use-features'
+import { RoadmapTimeline } from '@/components/roadmap/roadmap-timeline'
+import { RoadmapDependencies } from '@/components/roadmap/roadmap-dependencies'
+import { AddFeatureDialog } from '@/components/roadmap/add-feature-dialog'
+import { RoadmapExportDialog } from '@/components/roadmap/roadmap-export-dialog'
+import { ZoomView } from '@/components/roadmap/zoom-view'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from "@/components/ui/dropdown-menu"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
+type ViewMode = 'timeline' | 'dependencies' | 'zoom'
 type ZoomLevel = 'year' | 'month' | 'sprint' | 'week'
-type FeatureStatus = 'planned' | 'in-progress' | 'completed' | 'blocked'
-
-const zoomLabels = {
-  year: 'Ano',
-  month: 'Mês',
-  sprint: 'Sprint',
-  week: 'Semana'
-} as const
 
 export default function RoadmapPage() {
-  // Estados
-  const [isAddFeatureOpen, setIsAddFeatureOpen] = useState(false)
+  const { features = [], isLoading } = useFeatures()
   const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<FeatureStatus | 'all'>('all')
-  const [currentDate] = useState(new Date())
+  const [viewMode, setViewMode] = useState<ViewMode>('timeline')
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('month')
-  const { features, isLoading: isLoadingFeatures, error } = useFeatures()
+  const [currentDate] = useState(new Date())
+  const [showAddFeature, setShowAddFeature] = useState(false)
+  const [showExportDialog, setShowExportDialog] = useState(false)
+  const [statusFilter, setStatusFilter] = useState<string[]>([])
+  const router = useRouter()
 
-  // Funções de zoom
+  // Métricas rápidas ajustadas - removido labels
+  const items = [
+    {
+      icon: CheckCircle2,
+      tooltip: 'Features Concluídas',
+      value: features.filter(f => f.status === 'done').length,
+      color: 'text-emerald-500',
+      bgColor: 'bg-emerald-500/8 dark:bg-emerald-500/10'
+    },
+    {
+      icon: Clock,
+      tooltip: 'Features em Progresso',
+      value: features.filter(f => f.status === 'doing').length,
+      color: 'text-blue-500',
+      bgColor: 'bg-blue-500/8 dark:bg-blue-500/10'
+    },
+    {
+      icon: AlertTriangle,
+      tooltip: 'Features Bloqueadas',
+      value: features.filter(f => f.status === 'blocked').length,
+      color: 'text-red-500',
+      bgColor: 'bg-red-500/8 dark:bg-red-500/10'
+    },
+    {
+      icon: Target,
+      tooltip: 'Features Planejadas',
+      value: features.filter(f => f.status === 'backlog').length,
+      color: 'text-violet-500',
+      bgColor: 'bg-violet-500/8 dark:bg-violet-500/10'
+    }
+  ]
+
+  const filteredFeatures = features.filter(feature => {
+    // Filtro de busca
+    const matchesSearch = 
+      feature.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      feature.description.what.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    if (!matchesSearch) return false
+
+    // Filtro de status
+    if (statusFilter.length > 0 && !statusFilter.includes(feature.status)) {
+      return false
+    }
+
+    return true
+  })
+
   const handleZoomIn = () => {
     const levels: ZoomLevel[] = ['year', 'month', 'sprint', 'week']
     const currentIndex = levels.indexOf(zoomLevel)
@@ -64,186 +119,299 @@ export default function RoadmapPage() {
     }
   }
 
-  // Loading state
-  if (isLoadingFeatures) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-primary)]" />
-      </div>
-    )
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Erro ao carregar roadmap</h2>
-          <p className="text-[var(--color-text-secondary)]">{error.message}</p>
-        </div>
-      </div>
-    )
+  const handleFeatureClick = (feature: any) => {
+    router.push(`/features/${feature.id}`)
   }
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="shrink-0 bg-[var(--color-background-primary)] border-b border-[var(--color-border)] z-10">
-        {/* Primeira linha: Título e ações principais */}
-        <div className="px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">Roadmap</h1>
-            <p className="text-sm text-[var(--color-text-secondary)]">
-              Planeje e acompanhe o desenvolvimento do seu produto
-            </p>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 px-3 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-            >
-              <Share2 className="w-3.5 h-3.5 mr-1.5" />
-              <span className="text-xs">Compartilhar</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 px-3 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-            >
-              <Download className="w-3.5 h-3.5 mr-1.5" />
-              <span className="text-xs">Exportar</span>
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => setIsAddFeatureOpen(true)}
-              className="h-8 px-3 bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)]"
-            >
-              <Plus className="w-3.5 h-3.5 mr-1.5" />
-              <span className="text-xs">Nova Feature</span>
-            </Button>
-          </div>
-        </div>
-
-        {/* Segunda linha: Controles e filtros */}
-        <div className="px-6 py-2 border-t border-[var(--color-border)] bg-[var(--color-background-elevated)] flex items-center gap-3">
-          {/* Busca */}
-          <div className="relative w-64">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-secondary)]" />
-            <Input
-              placeholder="Buscar features..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 h-8 text-xs"
-            />
-          </div>
-
-          {/* Filtro de Status */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className={`h-8 px-3 group ${
-                  statusFilter !== 'all' ? 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)]' : ''
-                }`}
+    <div className="h-full flex flex-col -m-6">
+      {/* Cabeçalho */}
+      <div className="bg-[var(--color-background-primary)] border-b border-[var(--color-border)]">
+        <div className="h-14 px-4 flex items-center justify-between">
+          {/* Lado Esquerdo */}
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3">
+              <h1 className="text-sm font-medium">Roadmap</h1>
+              <Button
+                size="sm"
+                className="h-8 w-8 p-0 bg-[var(--color-primary)] text-white"
+                onClick={() => setShowAddFeature(true)}
               >
-                <Filter className="w-3.5 h-3.5 mr-1.5 group-hover:text-[var(--color-primary)]" />
-                <span className="text-xs group-hover:text-[var(--color-primary)]">
-                  {statusFilter === 'all' ? 'Status' : 
-                   statusFilter === 'planned' ? 'Planejado' :
-                   statusFilter === 'in-progress' ? 'Em Progresso' :
-                   statusFilter === 'completed' ? 'Concluído' : 'Bloqueado'}
-                </span>
+                <Plus className="w-4 h-4" />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent 
-              align="start"
-              className="bg-[var(--color-background-elevated)] border border-[var(--color-border)] shadow-lg min-w-[160px]"
-            >
-              {/* ... itens do dropdown ... */}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </div>
 
-          {/* Separador */}
-          <div className="h-4 w-px bg-[var(--color-border)]" />
+            <div className="h-4 w-px bg-[var(--color-border)]" />
 
-          {/* Controles de Zoom e Navegação */}
-          <div className="flex items-center gap-1.5">
-            {/* Navegação */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
-              title="Período anterior"
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-            </Button>
+            <div className="flex items-center gap-4">
+              {items.map((item, index) => (
+                <TooltipProvider key={item.tooltip}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div
+                        className={cn(
+                          "flex items-center gap-2",
+                          index !== items.length - 1 && "border-r border-[var(--color-border)] pr-4"
+                        )}
+                      >
+                        <div className={cn("p-1 rounded", item.bgColor)}>
+                          <item.icon className={cn("w-3 h-3", item.color)} />
+                        </div>
+                        <span className="text-sm font-medium">
+                          {item.value}
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs font-medium">{item.tooltip}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ))}
+            </div>
+          </div>
 
-            {/* Seletor de Visualização */}
+          {/* Lado Direito */}
+          <div className="flex items-center gap-3">
+            {/* Busca */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
+              <Input
+                placeholder="Buscar features..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 h-8 w-[200px]"
+              />
+            </div>
+
+            {/* Filtros */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 px-3 gap-1.5 group">
-                  {zoomLevel === 'year' && <Calendar className="w-3.5 h-3.5 group-hover:text-[var(--color-primary)]" />}
-                  {zoomLevel === 'month' && <CalendarDays className="w-3.5 h-3.5 group-hover:text-[var(--color-primary)]" />}
-                  {zoomLevel === 'sprint' && <CalendarRange className="w-3.5 h-3.5 group-hover:text-[var(--color-primary)]" />}
-                  {zoomLevel === 'week' && <CalendarClock className="w-3.5 h-3.5 group-hover:text-[var(--color-primary)]" />}
-                  <span className="text-xs group-hover:text-[var(--color-primary)]">{zoomLabels[zoomLevel]}</span>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className={cn(
+                    "h-8 px-2.5 text-xs",
+                    statusFilter.length > 0 && "text-[var(--color-primary)]"
+                  )}
+                >
+                  <Filter className="w-3.5 h-3.5 mr-2" />
+                  Filtros
                 </Button>
               </DropdownMenuTrigger>
-              {/* ... itens do dropdown ... */}
+              <DropdownMenuContent align="end">
+                {/* ... itens de filtro ... */}
+              </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
-              title="Próximo período"
-            >
-              <ChevronRight className="w-3.5 h-3.5" />
-            </Button>
+            {/* Visualizações */}
+            <div className="flex items-center gap-1 border-l border-[var(--color-border)] pl-3">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setViewMode('timeline')}
+                      className={cn(
+                        "h-8 w-8 p-0",
+                        viewMode === 'timeline' && "text-[var(--color-primary)]"
+                      )}
+                    >
+                      <CalendarRange className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p className="text-xs">Timeline</p>
+                    <p className="text-[10px] text-[var(--color-text-secondary)]">
+                      Visualização em linha do tempo
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
-            {/* Zoom */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleZoomIn}
-              disabled={zoomLevel === 'week'}
-              className="h-8 w-8 p-0 disabled:opacity-40"
-              title="Aumentar zoom"
-            >
-              <ZoomIn className="w-3.5 h-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleZoomOut}
-              disabled={zoomLevel === 'year'}
-              className="h-8 w-8 p-0 disabled:opacity-40"
-              title="Diminuir zoom"
-            >
-              <ZoomOut className="w-3.5 h-3.5" />
-            </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setViewMode('dependencies')}
+                      className={cn(
+                        "h-8 w-8 p-0",
+                        viewMode === 'dependencies' && "text-[var(--color-primary)]"
+                      )}
+                    >
+                      <Target className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p className="text-xs">Dependências</p>
+                    <p className="text-[10px] text-[var(--color-text-secondary)]">
+                      Visualização de dependências entre features
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setViewMode('zoom')}
+                      className={cn(
+                        "h-8 w-8 p-0",
+                        viewMode === 'zoom' && "text-[var(--color-primary)]"
+                      )}
+                    >
+                      <ZoomIn className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p className="text-xs">Zoom</p>
+                    <p className="text-[10px] text-[var(--color-text-secondary)]">
+                      Visualização com controle de zoom
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+
+            {/* Zoom Controls */}
+            {viewMode !== 'dependencies' && (
+              <div className="flex items-center gap-1 border-l border-[var(--color-border)] pl-3">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleZoomIn}
+                        disabled={zoomLevel === 'week'}
+                        className="h-8 w-8 p-0"
+                      >
+                        <ZoomIn className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      <p className="text-xs">Aumentar Zoom</p>
+                      <p className="text-[10px] text-[var(--color-text-secondary)]">
+                        {zoomLevel === 'year' ? 'Mês' : 
+                         zoomLevel === 'month' ? 'Sprint' : 
+                         zoomLevel === 'sprint' ? 'Semana' : 'Máximo zoom'}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleZoomOut}
+                        disabled={zoomLevel === 'year'}
+                        className="h-8 w-8 p-0"
+                      >
+                        <ZoomOut className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      <p className="text-xs">Diminuir Zoom</p>
+                      <p className="text-[10px] text-[var(--color-text-secondary)]">
+                        {zoomLevel === 'week' ? 'Sprint' : 
+                         zoomLevel === 'sprint' ? 'Mês' : 
+                         zoomLevel === 'month' ? 'Ano' : 'Mínimo zoom'}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            )}
+
+            {/* Ações */}
+            <div className="flex items-center gap-1 border-l border-[var(--color-border)] pl-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-3"
+                onClick={() => setShowExportDialog(true)}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                <span className="text-xs">Exportar</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-3"
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                <span className="text-xs">Compartilhar</span>
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Timeline */}
-      <div className="flex-1 min-h-0">
-        <TimelineView 
-          features={features || []}
-          currentDate={currentDate}
-          zoomLevel={zoomLevel}
-        />
+      {/* Conteúdo */}
+      <div className="flex-1 p-6 overflow-auto">
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-[var(--color-text-secondary)]">Carregando...</div>
+          </div>
+        ) : filteredFeatures.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <div className="text-sm text-[var(--color-text-secondary)]">
+              {searchTerm ? 'Nenhuma feature encontrada' : 'Nenhuma feature cadastrada'}
+            </div>
+            <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+              {searchTerm ? 'Tente buscar com outros termos' : 'Comece adicionando uma feature ao roadmap'}
+            </p>
+          </div>
+        ) : (
+          <>
+            {viewMode === 'timeline' && (
+              <RoadmapTimeline
+                features={filteredFeatures}
+                currentDate={currentDate}
+                zoomLevel={zoomLevel}
+                onFeatureClick={handleFeatureClick}
+              />
+            )}
+            {viewMode === 'dependencies' && (
+              <RoadmapDependencies
+                features={filteredFeatures}
+                onFeatureClick={handleFeatureClick}
+              />
+            )}
+            {viewMode === 'zoom' && (
+              <ZoomView
+                features={filteredFeatures}
+                currentDate={currentDate}
+                zoomLevel={zoomLevel}
+                onFeatureClick={handleFeatureClick}
+              />
+            )}
+          </>
+        )}
       </div>
 
-      {/* Dialog de adicionar feature */}
+      {/* Dialogs */}
       <AddFeatureDialog
-        open={isAddFeatureOpen}
-        onOpenChange={setIsAddFeatureOpen}
+        open={showAddFeature}
+        onOpenChange={setShowAddFeature}
         onSuccess={() => {
-          setIsAddFeatureOpen(false)
+          setShowAddFeature(false)
         }}
+      />
+
+      <RoadmapExportDialog
+        features={filteredFeatures}
+        open={showExportDialog}
+        onOpenChange={setShowExportDialog}
       />
     </div>
   )

@@ -14,7 +14,6 @@ import {
   BookOpen,
   Target,
   GitBranch,
-  BarChart3,
   Settings,
   Moon,
   Sun,
@@ -72,11 +71,6 @@ const menuItems = [
     title: "Roadmap",
     href: "/roadmap",
     icon: GitBranch,
-  },
-  {
-    title: "Analytics",
-    href: "/analytics",
-    icon: BarChart3,
   },
   {
     title: "Alertas Admin",
