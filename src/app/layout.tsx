@@ -1,8 +1,9 @@
 'use client';
 
-import { SupabaseProvider } from '@/providers/supabase-provider'
-import { QueryProvider } from '@/providers/query-provider'
 import './globals.css'
+import { Inter } from 'next/font/google'
+
+const inter = Inter({ subsets: ['latin'] })
 
 export default function RootLayout({
   children,
@@ -11,13 +12,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body>
-        <QueryProvider>
-          <SupabaseProvider>
-            {children}
-          </SupabaseProvider>
-        </QueryProvider>
-      </body>
+      <body className={inter.className}>{children}</body>
     </html>
   )
 } 

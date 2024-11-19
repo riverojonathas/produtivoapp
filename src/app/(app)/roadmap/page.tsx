@@ -5,12 +5,9 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { 
-  Search, 
-  Plus, 
+  Plus,
   Calendar,
-  CalendarDays,
   CalendarRange,
-  CalendarClock,
   ZoomIn,
   ZoomOut,
   Share2,
@@ -19,19 +16,26 @@ import {
   Target,
   Clock,
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
+  Users,
+  Kanban,
+  GanttChartSquare,
+  ListFilter,
+  Search
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useFeatures } from '@/hooks/use-features'
 import { RoadmapTimeline } from '@/components/roadmap/roadmap-timeline'
 import { RoadmapDependencies } from '@/components/roadmap/roadmap-dependencies'
+import { RoadmapKanban } from '@/components/roadmap/roadmap-kanban'
+import { RoadmapCalendar } from '@/components/roadmap/roadmap-calendar'
+import { RoadmapGantt } from '@/components/roadmap/roadmap-gantt'
 import { AddFeatureDialog } from '@/components/roadmap/add-feature-dialog'
 import { RoadmapExportDialog } from '@/components/roadmap/roadmap-export-dialog'
 import { ZoomView } from '@/components/roadmap/zoom-view'
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
@@ -41,18 +45,51 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
-type ViewMode = 'timeline' | 'dependencies' | 'zoom'
+// Tipos
+type ViewMode = 'timeline' | 'dependencies' | 'zoom' | 'kanban' | 'calendar' | 'gantt'
 type ZoomLevel = 'year' | 'month' | 'sprint' | 'week'
+
+interface RoadmapFilters {
+  status: string[]
+  priority: string[]
+  assignees: string[]
+  quarter: string[]
+  tags: string[]
+  hasRisks: boolean | null
+  hasDependencies: boolean | null
+  dueDate: {
+    start: Date | null
+    end: Date | null
+  }
+}
+
+// Função auxiliar para verificar se uma data está vencida
+const isOverdue = (date?: Date | string) => {
+  if (!date) return false
+  return new Date(date) < new Date()
+}
 
 export default function RoadmapPage() {
   const { features = [], isLoading } = useFeatures()
   const [searchTerm, setSearchTerm] = useState('')
   const [viewMode, setViewMode] = useState<ViewMode>('timeline')
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('month')
-  const [currentDate] = useState(new Date())
+  const [currentDate, setCurrentDate] = useState(new Date())
   const [showAddFeature, setShowAddFeature] = useState(false)
   const [showExportDialog, setShowExportDialog] = useState(false)
-  const [statusFilter, setStatusFilter] = useState<string[]>([])
+  const [filters, setFilters] = useState<RoadmapFilters>({
+    status: [],
+    priority: [],
+    assignees: [],
+    quarter: [],
+    tags: [],
+    hasRisks: null,
+    hasDependencies: null,
+    dueDate: {
+      start: null,
+      end: null
+    }
+  })
   const router = useRouter()
 
   // Métricas rápidas ajustadas - removido labels
@@ -62,31 +99,80 @@ export default function RoadmapPage() {
       tooltip: 'Features Concluídas',
       value: features.filter(f => f.status === 'done').length,
       color: 'text-emerald-500',
-      bgColor: 'bg-emerald-500/8 dark:bg-emerald-500/10'
+      bgColor: 'bg-emerald-500/8'
     },
     {
       icon: Clock,
-      tooltip: 'Features em Progresso',
+      tooltip: 'Em Progresso',
       value: features.filter(f => f.status === 'doing').length,
       color: 'text-blue-500',
-      bgColor: 'bg-blue-500/8 dark:bg-blue-500/10'
+      bgColor: 'bg-blue-500/8'
     },
     {
       icon: AlertTriangle,
-      tooltip: 'Features Bloqueadas',
+      tooltip: 'Bloqueadas',
       value: features.filter(f => f.status === 'blocked').length,
       color: 'text-red-500',
-      bgColor: 'bg-red-500/8 dark:bg-red-500/10'
+      bgColor: 'bg-red-500/8'
     },
     {
       icon: Target,
-      tooltip: 'Features Planejadas',
+      tooltip: 'Planejadas',
       value: features.filter(f => f.status === 'backlog').length,
       color: 'text-violet-500',
-      bgColor: 'bg-violet-500/8 dark:bg-violet-500/10'
+      bgColor: 'bg-violet-500/8'
+    },
+    {
+      icon: Calendar,
+      tooltip: 'Atrasadas',
+      value: features.filter(f => isOverdue(f.dueDate)).length,
+      color: 'text-amber-500',
+      bgColor: 'bg-amber-500/8'
+    },
+    {
+      icon: Users,
+      tooltip: 'Sem Responsável',
+      value: features.filter(f => !f.assignee).length,
+      color: 'text-slate-500',
+      bgColor: 'bg-slate-500/8'
     }
   ]
 
+  // Opções de visualização
+  const viewOptions = [
+    {
+      id: 'timeline',
+      label: 'Timeline',
+      icon: CalendarRange,
+      description: 'Visualização em linha do tempo'
+    },
+    {
+      id: 'dependencies',
+      label: 'Dependências',
+      icon: Target,
+      description: 'Visualização de dependências entre features'
+    },
+    {
+      id: 'kanban',
+      label: 'Kanban',
+      icon: Kanban,
+      description: 'Visualização em quadro kanban'
+    },
+    {
+      id: 'calendar',
+      label: 'Calendário',
+      icon: Calendar,
+      description: 'Visualização em calendário'
+    },
+    {
+      id: 'gantt',
+      label: 'Gantt',
+      icon: GanttChartSquare,
+      description: 'Visualização em gráfico Gantt'
+    }
+  ] as const
+
+  // Filtrar features
   const filteredFeatures = features.filter(feature => {
     // Filtro de busca
     const matchesSearch = 
@@ -95,8 +181,44 @@ export default function RoadmapPage() {
     
     if (!matchesSearch) return false
 
-    // Filtro de status
-    if (statusFilter.length > 0 && !statusFilter.includes(feature.status)) {
+    // Status
+    if (filters.status.length > 0 && !filters.status.includes(feature.status)) {
+      return false
+    }
+
+    // Prioridade
+    if (filters.priority.length > 0 && !filters.priority.includes(feature.priority)) {
+      return false
+    }
+
+    // Responsáveis
+    if (filters.assignees.length > 0 && !feature.assignees.some(a => filters.assignees.includes(a))) {
+      return false
+    }
+
+    // Quarter
+    if (filters.quarter.length > 0 && feature.quarter && !filters.quarter.includes(feature.quarter)) {
+      return false
+    }
+
+    // Tags
+    if (filters.tags.length > 0 && !feature.tags.some(t => filters.tags.includes(t))) {
+      return false
+    }
+
+    // Riscos e Dependências
+    if (filters.hasRisks !== null) {
+      // ... lógica de riscos
+    }
+    if (filters.hasDependencies !== null && filters.hasDependencies !== (feature.dependencies.length > 0)) {
+      return false
+    }
+
+    // Datas
+    if (filters.dueDate.start && feature.dueDate && new Date(feature.dueDate) < filters.dueDate.start) {
+      return false
+    }
+    if (filters.dueDate.end && feature.dueDate && new Date(feature.dueDate) > filters.dueDate.end) {
       return false
     }
 
@@ -192,7 +314,7 @@ export default function RoadmapPage() {
                   size="sm" 
                   className={cn(
                     "h-8 px-2.5 text-xs",
-                    statusFilter.length > 0 && "text-[var(--color-primary)]"
+                    filters.status.length > 0 && "text-[var(--color-primary)]"
                   )}
                 >
                   <Filter className="w-3.5 h-3.5 mr-2" />
@@ -206,78 +328,54 @@ export default function RoadmapPage() {
 
             {/* Visualizações */}
             <div className="flex items-center gap-1 border-l border-[var(--color-border)] pl-3">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setViewMode('timeline')}
-                      className={cn(
-                        "h-8 w-8 p-0",
-                        viewMode === 'timeline' && "text-[var(--color-primary)]"
-                      )}
-                    >
-                      <CalendarRange className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p className="text-xs">Timeline</p>
-                    <p className="text-[10px] text-[var(--color-text-secondary)]">
-                      Visualização em linha do tempo
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setViewMode('dependencies')}
-                      className={cn(
-                        "h-8 w-8 p-0",
-                        viewMode === 'dependencies' && "text-[var(--color-primary)]"
-                      )}
-                    >
-                      <Target className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p className="text-xs">Dependências</p>
-                    <p className="text-[10px] text-[var(--color-text-secondary)]">
-                      Visualização de dependências entre features
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setViewMode('zoom')}
-                      className={cn(
-                        "h-8 w-8 p-0",
-                        viewMode === 'zoom' && "text-[var(--color-primary)]"
-                      )}
-                    >
-                      <ZoomIn className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p className="text-xs">Zoom</p>
-                    <p className="text-[10px] text-[var(--color-text-secondary)]">
-                      Visualização com controle de zoom
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              {viewOptions.map((option) => (
+                <TooltipProvider key={option.id}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setViewMode(option.id as ViewMode)}
+                        className={cn(
+                          "h-8 w-8 p-0",
+                          viewMode === option.id && "text-[var(--color-primary)]"
+                        )}
+                      >
+                        <option.icon className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      <p className="text-xs">{option.label}</p>
+                      <p className="text-[10px] text-[var(--color-text-secondary)]">
+                        {option.description}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ))}
             </div>
+
+            {/* Filtros Avançados */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className={cn(
+                    "h-8 gap-2",
+                    Object.values(filters).some(f => 
+                      Array.isArray(f) ? f.length > 0 : f !== null
+                    ) && "text-[var(--color-primary)]"
+                  )}
+                >
+                  <ListFilter className="w-4 h-4" />
+                  Filtros Avançados
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[300px]">
+                {/* ... conteúdo dos filtros ... */}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Zoom Controls */}
             {viewMode !== 'dependencies' && (
@@ -379,6 +477,8 @@ export default function RoadmapPage() {
                 currentDate={currentDate}
                 zoomLevel={zoomLevel}
                 onFeatureClick={handleFeatureClick}
+                onDateChange={setCurrentDate}
+                onZoomChange={setZoomLevel}
               />
             )}
             {viewMode === 'dependencies' && (
@@ -394,6 +494,15 @@ export default function RoadmapPage() {
                 zoomLevel={zoomLevel}
                 onFeatureClick={handleFeatureClick}
               />
+            )}
+            {viewMode === 'kanban' && (
+              <RoadmapKanban features={filteredFeatures} />
+            )}
+            {viewMode === 'calendar' && (
+              <RoadmapCalendar features={filteredFeatures} />
+            )}
+            {viewMode === 'gantt' && (
+              <RoadmapGantt features={filteredFeatures} />
             )}
           </>
         )}

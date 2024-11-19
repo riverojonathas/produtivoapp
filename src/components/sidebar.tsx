@@ -23,6 +23,7 @@ import {
   Bell,
   AlertTriangle,
   User2,
+  Lightbulb
 } from "lucide-react"
 import { useAutoCollapse } from '@/hooks/use-auto-collapse'
 import { useNotifications } from '@/hooks/use-notifications'
@@ -45,6 +46,11 @@ const menuItems = [
     title: "Produtos",
     href: "/products",
     icon: Package,
+  },
+  {
+    title: "Lean Canvas",
+    href: "/lean-canvas",
+    icon: Lightbulb,
   },
   {
     title: "Personas",

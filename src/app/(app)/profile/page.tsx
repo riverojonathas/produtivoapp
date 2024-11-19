@@ -355,6 +355,52 @@ export default function ProfilePage() {
       ]
     },
     {
+      title: 'Aparência',
+      items: [
+        {
+          type: 'custom',
+          icon: <Monitor className="w-4 h-4" />,
+          label: 'Tema',
+          customContent: (
+            <div className="flex gap-2">
+              <Button
+                variant={theme === 'light' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleThemeChange('light')}
+                disabled={loading}
+                className="flex items-center gap-2"
+              >
+                <Sun className="w-4 h-4" />
+                Claro
+              </Button>
+              <Button
+                variant={theme === 'dark' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleThemeChange('dark')}
+                disabled={loading}
+                className="flex items-center gap-2"
+              >
+                <Moon className="w-4 h-4" />
+                Escuro
+              </Button>
+            </div>
+          )
+        },
+        {
+          type: 'select',
+          icon: <LayoutDashboard className="w-4 h-4" />,
+          label: 'Densidade',
+          value: density || 'comfortable',
+          options: [
+            { value: 'compact', label: 'Compacta' },
+            { value: 'comfortable', label: 'Confortável' },
+            { value: 'spacious', label: 'Espaçada' }
+          ],
+          onChange: (value) => handleDensityChange(value as 'compact' | 'comfortable' | 'spacious')
+        }
+      ]
+    },
+    {
       title: 'Informações Básicas',
       items: [
         {
@@ -460,52 +506,6 @@ export default function ProfilePage() {
               <ChevronRight className="w-4 h-4 flex-shrink-0" />
             </button>
           )
-        }
-      ]
-    },
-    {
-      title: 'Aparência',
-      items: [
-        {
-          type: 'custom',
-          icon: <Monitor className="w-4 h-4" />,
-          label: 'Tema',
-          customContent: (
-            <div className="flex gap-2">
-              <Button
-                variant={theme === 'light' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleThemeChange('light')}
-                disabled={loading}
-                className="flex items-center gap-2"
-              >
-                <Sun className="w-4 h-4" />
-                Claro
-              </Button>
-              <Button
-                variant={theme === 'dark' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleThemeChange('dark')}
-                disabled={loading}
-                className="flex items-center gap-2"
-              >
-                <Moon className="w-4 h-4" />
-                Escuro
-              </Button>
-            </div>
-          )
-        },
-        {
-          type: 'select',
-          icon: <LayoutDashboard className="w-4 h-4" />,
-          label: 'Densidade',
-          value: density || 'comfortable',
-          options: [
-            { value: 'compact', label: 'Compacta' },
-            { value: 'comfortable', label: 'Confortável' },
-            { value: 'spacious', label: 'Espaçada' }
-          ],
-          onChange: (value) => handleDensityChange(value as 'compact' | 'comfortable' | 'spacious')
         }
       ]
     }
