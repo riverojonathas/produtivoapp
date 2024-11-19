@@ -13,61 +13,90 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { 
+  AlertCircle, // Problema
+  Lightbulb, // Solução
+  BarChart2, // Métricas
+  Target, // Proposta de Valor
+  Shield, // Vantagem Competitiva
+  Share2, // Canais
+  Users, // Segmentos
+  DollarSign, // Custos
+  Wallet // Receita
+} from 'lucide-react'
 
 const CANVAS_SECTIONS = {
   problem: {
-    title: 'Problema',
-    placeholder: 'Liste os principais problemas que seu produto resolve',
-    hint: 'Ex: Dificuldade em gerenciar tarefas, Falta de visibilidade...',
-    borderColor: 'border-purple-500/30'
+    title: 'PROBLEMA',
+    subtitle: 'CRIAR VALOR',
+    placeholder: 'Liste os principais problemas que quer resolver',
+    hint: 'ALTERNATIVAS EXISTENTES',
+    borderColor: 'border-[#FFDAB9]',
+    icon: AlertCircle
   },
   solution: {
-    title: 'Solução',
-    placeholder: 'Como você resolve cada problema?',
-    hint: 'Ex: Interface intuitiva, Automação de processos...',
-    borderColor: 'border-orange-500/30'
-  },
-  metrics: {
-    title: 'Métricas-Chave',
-    placeholder: 'Quais números mostram que está funcionando?',
-    hint: 'Ex: Taxa de retenção, NPS, Usuários ativos...',
-    borderColor: 'border-amber-500/30'
+    title: 'SOLUÇÃO',
+    subtitle: 'ENTREGAR VALOR',
+    placeholder: 'Liste as principais características',
+    hint: 'Como você resolve cada problema?',
+    borderColor: 'border-[#ADD8E6]',
+    icon: Lightbulb
   },
   proposition: {
-    title: 'Proposta de Valor',
-    placeholder: 'Qual é sua promessa única?',
-    hint: 'Ex: Aumente a produtividade em 50%...',
-    borderColor: 'border-emerald-500/30'
+    title: 'PROPOSTA DE VALOR ÚNICA',
+    subtitle: 'CRIAR VALOR',
+    placeholder: 'Mensagem única clara e convincente',
+    hint: 'CONCEITO DE ALTO NÍVEL',
+    borderColor: 'border-[#FFE4B5]',
+    icon: Target
   },
   advantage: {
-    title: 'Vantagem Competitiva',
-    placeholder: 'O que torna seu produto único?',
-    hint: 'Ex: Tecnologia proprietária, Base de usuários...',
-    borderColor: 'border-lime-500/30'
-  },
-  channels: {
-    title: 'Canais',
-    placeholder: 'Como você alcança seus clientes?',
-    hint: 'Ex: Marketing Digital, Vendas Diretas...',
-    borderColor: 'border-teal-500/30'
+    title: 'VANTAGEM INJUSTA',
+    subtitle: 'DEFENDER VALOR',
+    placeholder: 'O que não pode ser facilmente copiado ou comprado',
+    hint: 'Seu diferencial competitivo',
+    borderColor: 'border-[#FFB6C1]',
+    icon: Shield
   },
   segments: {
-    title: 'Segmentos de Clientes',
-    placeholder: 'Quem são seus clientes ideais?',
-    hint: 'Ex: Startups em crescimento, Empresas médias...',
-    borderColor: 'border-cyan-500/30'
+    title: 'SEGMENTOS DE CLIENTES',
+    subtitle: 'CRIAR VALOR',
+    placeholder: 'Quem são seus clientes?',
+    hint: 'PRIMEIROS ADOTANTES',
+    borderColor: 'border-[#F5DEB3]',
+    icon: Users
+  },
+  metrics: {
+    title: 'MÉTRICAS CHAVE',
+    subtitle: 'MEDIR VALOR',
+    placeholder: 'Números que mostram o sucesso',
+    hint: 'Métricas principais',
+    borderColor: 'border-[#E6E6FA]',
+    icon: BarChart2
+  },
+  channels: {
+    title: 'CANAIS',
+    subtitle: 'ENTREGAR VALOR',
+    placeholder: 'Caminho até os clientes',
+    hint: 'Como você alcança seus clientes',
+    borderColor: 'border-[#ADD8E6]',
+    icon: Share2
   },
   costs: {
-    title: 'Estrutura de Custos',
-    placeholder: 'Quais são seus principais custos?',
-    hint: 'Ex: Desenvolvimento, Marketing, Infraestrutura...',
-    borderColor: 'border-blue-500/30'
+    title: 'ESTRUTURA DE CUSTOS',
+    subtitle: 'CAPTURAR VALOR',
+    placeholder: 'Custos de operação do negócio',
+    hint: 'Principais custos',
+    borderColor: 'border-[#90EE90]',
+    icon: DollarSign
   },
   revenue: {
-    title: 'Fontes de Receita',
-    placeholder: 'Como você ganha dinheiro?',
-    hint: 'Ex: Assinatura mensal, Serviços premium...',
-    borderColor: 'border-indigo-500/30'
+    title: 'FONTES DE RECEITA',
+    subtitle: 'CAPTURAR VALOR',
+    placeholder: 'Modelo de receita',
+    hint: 'Como você ganha dinheiro',
+    borderColor: 'border-[#90EE90]',
+    icon: Wallet
   }
 } as const
 
@@ -105,9 +134,10 @@ export function CanvasLayout({ sections, onSectionUpdate, isEditing }: CanvasLay
         )}
       >
         <h3 className={cn(
-          "text-sm font-medium",
+          "text-sm font-medium flex items-center gap-2",
           hasContent ? "text-[var(--color-text-primary)]" : "text-[var(--color-text-secondary)]"
         )}>
+          <info.icon className="w-4 h-4" />
           {info.title}
         </h3>
 
@@ -224,34 +254,48 @@ export function CanvasLayout({ sections, onSectionUpdate, isEditing }: CanvasLay
   }
 
   return (
-    <div className="grid grid-cols-10 gap-4 h-[calc(100vh-12rem)]">
-      {/* Problema e Segmentos */}
-      <div className="col-span-2 grid grid-rows-2 gap-4">
-        {renderSection('problem')}
-        {renderSection('segments')}
+    <div className="grid grid-rows-[1fr_auto] gap-4 h-[calc(100vh-12rem)]">
+      {/* Linha Superior - 5 colunas */}
+      <div className="grid grid-cols-5 gap-4">
+        {/* Problem */}
+        <div>
+          {renderSection('problem')}
+        </div>
+
+        {/* Solution + Metrics */}
+        <div className="grid grid-rows-2 gap-4">
+          {renderSection('solution')}
+          {renderSection('metrics')}
+        </div>
+
+        {/* Unique Value Proposition - Coluna Central */}
+        <div className="h-full">
+          {renderSection('proposition')}
+        </div>
+
+        {/* Unfair Advantage + Channels */}
+        <div className="grid grid-rows-2 gap-4">
+          {renderSection('advantage')}
+          {renderSection('channels')}
+        </div>
+
+        {/* Customer Segments */}
+        <div>
+          {renderSection('segments')}
+        </div>
       </div>
 
-      {/* Solução e Métricas */}
-      <div className="col-span-2 grid grid-rows-2 gap-4">
-        {renderSection('solution')}
-        {renderSection('metrics')}
-      </div>
+      {/* Linha Inferior - 2 colunas grandes */}
+      <div className="grid grid-cols-2 gap-4 h-[200px]">
+        {/* Cost Structure - 2 colunas à esquerda */}
+        <div>
+          {renderSection('costs')}
+        </div>
 
-      {/* Proposta de Valor */}
-      <div className="col-span-2">
-        {renderSection('proposition')}
-      </div>
-
-      {/* Vantagem e Canais */}
-      <div className="col-span-2 grid grid-rows-2 gap-4">
-        {renderSection('advantage')}
-        {renderSection('channels')}
-      </div>
-
-      {/* Custos e Receitas */}
-      <div className="col-span-2 grid grid-rows-2 gap-4">
-        {renderSection('costs')}
-        {renderSection('revenue')}
+        {/* Revenue Streams - 2 colunas à direita */}
+        <div>
+          {renderSection('revenue')}
+        </div>
       </div>
     </div>
   )
