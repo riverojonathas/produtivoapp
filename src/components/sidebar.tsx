@@ -212,8 +212,12 @@ export function Sidebar() {
                       )}
                     </Link>
                   </TooltipTrigger>
-                  {isCollapsed && !isMobile && (
-                    <TooltipContent side="right" className="text-[11px] font-medium">
+                  {(isCollapsed && !isMobile) && (
+                    <TooltipContent 
+                      side="right" 
+                      className="text-[11px] font-medium"
+                      forceMount={false}
+                    >
                       {item.title}
                     </TooltipContent>
                   )}
