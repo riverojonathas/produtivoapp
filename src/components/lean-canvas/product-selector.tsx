@@ -7,7 +7,6 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Link2, Link2Off, Package } from 'lucide-react'
@@ -62,9 +61,11 @@ export function ProductSelector({ currentProductId, onSelect, trigger }: Product
 
         <DropdownMenuSeparator className="bg-[var(--color-border)]" />
 
-        <DropdownMenuLabel className="text-xs font-medium text-[var(--color-text-secondary)]">
-          {filteredProducts.length} produtos encontrados
-        </DropdownMenuLabel>
+        <div className="py-1 px-2">
+          <span className="text-xs font-medium text-[var(--color-text-secondary)]">
+            {filteredProducts.length} produtos encontrados
+          </span>
+        </div>
 
         <div className="max-h-[200px] overflow-y-auto">
           {filteredProducts.map((product) => (

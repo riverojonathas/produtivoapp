@@ -1,205 +1,135 @@
 'use client'
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Persona } from '@/types/product'
 
-interface CreatePersonaInput {
+interface Persona {
+  id: string
   name: string
   description: string
   characteristics: string[]
   pain_points: string[]
   goals: string[]
-  product_id?: string | null
-  owner_id: string | null
+  product_id: string | null
+  owner_id: string
+  created_at: string
+  updated_at: string
 }
 
-export function usePersonas(personaId?: string) {
+interface UpdatePersonaParams {
+  id: string
+  data: Partial<Persona>
+}
+
+export function usePersonas() {
   const queryClient = useQueryClient()
 
-  const query = useQuery<Persona[]>({
+  // Buscar personas
+  const { data: personas = [], isLoading } = useQuery({
     queryKey: ['personas'],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session) {
-        throw new Error('Não autenticado')
-      }
-
-      const { data, error } = await supabase
-        .from('personas')
-        .select(`
-          *,
-          product:products (
-            id,
-            name,
-            status
-          )
-        `)
-        .eq('owner_id', session.user.id)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-
-      return data || []
-    }
-  })
-
-  const createPersona = useMutation({
-    mutationFn: async (input: CreatePersonaInput) => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
-        
-        if (!session) {
-          throw new Error('Usuário não autenticado')
-        }
-
-        const personaData = {
-          name: input.name.trim(),
-          description: input.description?.trim() || '',
-          characteristics: input.characteristics || [],
-          pain_points: input.pain_points || [],
-          goals: input.goals || [],
-          product_id: input.product_id || null,
-          owner_id: session.user.id,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) throw new Error('Usuário não autenticado')
 
         const { data, error } = await supabase
           .from('personas')
-          .insert(personaData)
-          .select(`
-            *,
-            product:products (
-              id,
-              name,
-              status
-            )
-          `)
-          .single()
-
-        if (error) {
-          console.error('Erro do Supabase:', error)
-          throw new Error(error.message)
-        }
-
-        if (!data) {
-          throw new Error('Persona não foi criada')
-        }
-
-        return data
-      } catch (error) {
-        console.error('Erro completo:', error)
-        throw error
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['personas'] })
-      toast.success('Persona criada com sucesso')
-    },
-    onError: (error) => {
-      console.error('Erro na mutação:', error)
-      toast.error(error instanceof Error ? error.message : 'Erro ao criar persona')
-    }
-  })
-
-  const updatePersona = useMutation({
-    mutationFn: async ({ id, data }: { id: string, data: Partial<Persona> }) => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        
-        if (!session) {
-          throw new Error('Não autenticado')
-        }
-
-        const updateData = {
-          ...data,
-          updated_at: new Date().toISOString()
-        }
-
-        const { data: updatedPersona, error } = await supabase
-          .from('personas')
-          .update(updateData)
-          .eq('id', id)
-          .select(`
-            *,
-            product:products (
-              id,
-              name,
-              status
-            )
-          `)
-          .single()
+          .select('*')
+          .eq('owner_id', user.id)
+          .order('created_at', { ascending: false })
 
         if (error) throw error
-
-        return updatedPersona
+        return data || []
       } catch (error) {
-        console.error('Erro ao atualizar persona:', error)
-        throw error
+        console.error('Erro ao carregar personas:', error)
+        return []
       }
+    },
+    retry: false
+  })
+
+  // Criar persona
+  const createPersona = useMutation({
+    mutationFn: async (data: Partial<Persona>) => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Usuário não autenticado')
+
+      // Garantir que owner_id seja preenchido
+      const personaData = {
+        name: data.name || '',
+        description: data.description || '',
+        characteristics: data.characteristics || [],
+        pain_points: data.pain_points || [],
+        goals: data.goals || [],
+        product_id: data.product_id || null,
+        owner_id: user.id, // Sempre incluir owner_id
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+
+      const { data: newPersona, error } = await supabase
+        .from('personas')
+        .insert([personaData])
+        .select()
+        .single()
+
+      if (error) throw error
+      return newPersona
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['personas'] })
-      toast.success('Persona atualizada com sucesso')
     }
   })
 
+  // Atualizar persona
+  const updatePersona = useMutation({
+    mutationFn: async ({ id, data }: UpdatePersonaParams) => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Usuário não autenticado')
+
+      // Não permitir alteração do owner_id
+      const { owner_id, ...updateData } = data
+      
+      const { data: updatedPersona, error } = await supabase
+        .from('personas')
+        .update({ ...updateData, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('owner_id', user.id)
+        .select()
+        .single()
+
+      if (error) throw error
+      return updatedPersona
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['personas'] })
+    }
+  })
+
+  // Deletar persona
   const deletePersona = useMutation({
     mutationFn: async (id: string) => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Usuário não autenticado')
+
       const { error } = await supabase
         .from('personas')
         .delete()
         .eq('id', id)
+        .eq('owner_id', user.id)
 
       if (error) throw error
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['personas'] })
-      toast.success('Persona excluída com sucesso')
-    },
-    onError: (error) => {
-      console.error('Erro ao excluir persona:', error)
-      toast.error('Erro ao excluir persona')
     }
   })
 
-  const getPersona = useQuery({
-    queryKey: ['persona', personaId],
-    queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session) {
-        throw new Error('Não autenticado')
-      }
-
-      const { data, error } = await supabase
-        .from('personas')
-        .select(`
-          *,
-          product:products (
-            id,
-            name,
-            status
-          )
-        `)
-        .eq('id', personaId)
-        .single()
-
-      if (error) throw error
-
-      return data
-    },
-    enabled: !!personaId
-  })
-
   return {
-    personas: query.data,
-    persona: getPersona.data,
-    isLoading: query.isLoading || (!!personaId && getPersona.isLoading),
-    error: query.error || getPersona.error,
+    personas,
+    isLoading,
     createPersona,
     updatePersona,
     deletePersona

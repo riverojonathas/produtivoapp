@@ -315,13 +315,34 @@ export default function PersonasPage() {
           <div className="flex items-center justify-center h-full">
             <div className="text-[var(--color-text-secondary)]">Carregando...</div>
           </div>
-        ) : filteredPersonas.length === 0 ? (
+        ) : personas.length === 0 ? (
+          <Card className="w-full p-12">
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className="rounded-full bg-[var(--color-background-subtle)] p-3">
+                <Users className="w-6 h-6 text-[var(--color-text-secondary)]" />
+              </div>
+              <h3 className="mt-4 text-lg font-semibold">
+                Nenhuma Persona Criada
+              </h3>
+              <p className="mt-2 text-sm text-[var(--color-text-secondary)] max-w-sm">
+                Crie sua primeira persona para começar a definir os usuários ideais do seu produto.
+              </p>
+              <Button 
+                onClick={() => router.push('/personas/new')} 
+                className="mt-4 bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)]"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Criar Primeira Persona
+              </Button>
+            </div>
+          </Card>
+        ) : searchTerm && filteredPersonas.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="text-sm text-[var(--color-text-secondary)]">
-              {searchTerm ? 'Nenhuma persona encontrada' : 'Nenhuma persona cadastrada'}
+              Nenhuma persona encontrada
             </div>
             <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
-              {searchTerm ? 'Tente buscar com outros termos' : 'Comece criando uma nova persona'}
+              Tente buscar com outros termos
             </p>
           </div>
         ) : (

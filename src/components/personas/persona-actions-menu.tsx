@@ -1,32 +1,22 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { usePersonas } from '@/hooks/use-personas'
+import { toast } from 'sonner'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { 
-  MoreHorizontal, 
-  Pencil, 
-  Trash2, 
-  Eye, 
-  Copy, 
-  Files
-} from "lucide-react"
-import { usePersonas } from "@/hooks/use-personas"
-import { toast } from "sonner"
-
-interface Persona {
-  id: string
-  name: string
-}
+import { MoreVertical, Pencil, Trash2 } from 'lucide-react'
 
 interface PersonaActionsMenuProps {
-  persona: Persona
+  persona: {
+    id: string
+  }
 }
 
 export function PersonaActionsMenu({ persona }: PersonaActionsMenuProps) {
@@ -34,90 +24,42 @@ export function PersonaActionsMenu({ persona }: PersonaActionsMenuProps) {
   const { deletePersona } = usePersonas()
 
   const handleDelete = async () => {
+    if (!confirm('Tem certeza que deseja excluir esta persona?')) return
+
     try {
       await deletePersona.mutateAsync(persona.id)
       toast.success('Persona excluída com sucesso')
     } catch (error) {
-      console.error('Erro ao excluir persona:', error)
       toast.error('Erro ao excluir persona')
     }
   }
 
-  const handleCopyLink = () => {
-    const url = `${window.location.origin}/personas/${persona.id}`
-    navigator.clipboard.writeText(url)
-    toast.success('Link copiado para a área de transferência')
-  }
-
-  const handleDuplicate = () => {
-    router.push(`/personas/new?duplicate=${persona.id}`)
-  }
-
-  const handleMenuClick = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-  }
-
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild onClick={handleMenuClick}>
-        <Button 
-          variant="ghost" 
-          size="sm"
-          className="h-8 w-8 p-0 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] persona-actions-menu"
-        >
-          <MoreHorizontal className="h-4 w-4" />
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+          <MoreVertical className="w-4 h-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent 
         align="end" 
-        className="w-48 bg-[var(--color-background-elevated)] border-[var(--color-border)]"
-        onClick={handleMenuClick}
+        className="w-56 bg-[var(--color-background-elevated)] border border-[var(--color-border)]"
       >
-        {/* Ações Principais */}
         <DropdownMenuItem 
-          className="flex items-center gap-2 text-sm cursor-pointer hover:bg-[var(--color-background-subtle)] focus:bg-[var(--color-background-subtle)] text-[var(--color-text-primary)]"
-          onClick={() => router.push(`/personas/${persona.id}/edit`)}
+          className="hover:bg-[var(--color-background-subtle)] cursor-pointer"
+          onClick={() => router.push(`/personas/${persona.id}`)}
         >
-          <Pencil className="w-4 h-4" />
+          <Pencil className="w-4 h-4 mr-2" />
           Editar
         </DropdownMenuItem>
 
-        <DropdownMenuItem 
-          className="flex items-center gap-2 text-sm cursor-pointer hover:bg-[var(--color-background-subtle)] focus:bg-[var(--color-background-subtle)] text-[var(--color-text-primary)]"
-          onClick={() => router.push(`/personas/${persona.id}`)}
-        >
-          <Eye className="w-4 h-4" />
-          Ver detalhes
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator />
-
-        {/* Ações Secundárias */}
-        <DropdownMenuItem 
-          className="flex items-center gap-2 text-sm cursor-pointer hover:bg-[var(--color-background-subtle)] focus:bg-[var(--color-background-subtle)] text-[var(--color-text-primary)]"
-          onClick={handleCopyLink}
-        >
-          <Copy className="w-4 h-4" />
-          Copiar link
-        </DropdownMenuItem>
+        <DropdownMenuSeparator className="bg-[var(--color-border)]" />
 
         <DropdownMenuItem 
-          className="flex items-center gap-2 text-sm cursor-pointer hover:bg-[var(--color-background-subtle)] focus:bg-[var(--color-background-subtle)] text-[var(--color-text-primary)]"
-          onClick={handleDuplicate}
-        >
-          <Files className="w-4 h-4" />
-          Duplicar persona
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator />
-
-        {/* Ação de Excluir */}
-        <DropdownMenuItem 
-          className="flex items-center gap-2 text-sm cursor-pointer hover:bg-red-50 focus:bg-red-50 text-red-500 focus:text-red-500 dark:hover:bg-red-950 dark:focus:bg-red-950"
+          className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 cursor-pointer"
           onClick={handleDelete}
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="w-4 h-4 mr-2" />
           Excluir
         </DropdownMenuItem>
       </DropdownMenuContent>
