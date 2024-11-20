@@ -2,10 +2,9 @@ export interface Canvas {
   id: string
   title: string
   description?: string
-  product_id?: string | null
+  product_id?: string
   created_at: string
   updated_at: string
-  user_id: string
   sections: {
     problem: string[]
     solution: string[]

@@ -29,72 +29,125 @@ const CANVAS_SECTIONS = {
   problem: {
     title: 'PROBLEMA',
     subtitle: 'CRIAR VALOR',
-    placeholder: 'Liste os principais problemas que quer resolver',
+    placeholder: 'Top 3 problemas que seus clientes enfrentam',
     hint: 'ALTERNATIVAS EXISTENTES',
+    template: [
+      '1. [Problema principal que afeta seu público]',
+      '2. [Dor ou necessidade secundária]',
+      '3. [Problema adicional relacionado]',
+      'Ex Spotify: 1. Pirataria de música, 2. Custo alto de CDs/Downloads, 3. Descoberta limitada de músicas novas'
+    ],
     borderColor: 'border-[#FFDAB9]',
     icon: AlertCircle
   },
   solution: {
     title: 'SOLUÇÃO',
     subtitle: 'ENTREGAR VALOR',
-    placeholder: 'Liste as principais características',
-    hint: 'Como você resolve cada problema?',
+    placeholder: 'Características principais da sua solução',
+    hint: 'Solução mais simples para cada problema',
+    template: [
+      '1. [Como resolve o problema principal]',
+      '2. [Solução para problema secundário]',
+      '3. [Diferencial competitivo]',
+      'Ex Netflix: 1. Streaming sob demanda, 2. Preço acessível, 3. Recomendações personalizadas'
+    ],
     borderColor: 'border-[#ADD8E6]',
     icon: Lightbulb
   },
   proposition: {
     title: 'PROPOSTA DE VALOR ÚNICA',
     subtitle: 'CRIAR VALOR',
-    placeholder: 'Mensagem única clara e convincente',
+    placeholder: 'Mensagem única e convincente que define seu produto',
     hint: 'CONCEITO DE ALTO NÍVEL',
+    template: [
+      '[Produto/Serviço] que permite [benefício principal]',
+      'diferente de [alternativa atual] porque [diferencial único]',
+      'Ex Uber: "Transporte particular ao alcance de um botão. Mais conveniente que táxi, mais barato que ter carro próprio"'
+    ],
     borderColor: 'border-[#FFE4B5]',
     icon: Target
   },
   advantage: {
     title: 'VANTAGEM INJUSTA',
     subtitle: 'DEFENDER VALOR',
-    placeholder: 'O que não pode ser facilmente copiado ou comprado',
+    placeholder: 'O que torna seu negócio difícil de copiar?',
     hint: 'Seu diferencial competitivo',
+    template: [
+      '1. [Propriedade intelectual/Patentes]',
+      '2. [Dados/Informações exclusivas]',
+      '3. [Rede/Parcerias estratégicas]',
+      'Ex Google: 1. Algoritmos proprietários, 2. Base de dados massiva, 3. Infraestrutura global'
+    ],
     borderColor: 'border-[#FFB6C1]',
     icon: Shield
   },
   segments: {
     title: 'SEGMENTOS DE CLIENTES',
     subtitle: 'CRIAR VALOR',
-    placeholder: 'Quem são seus clientes?',
+    placeholder: 'Quem são seus primeiros clientes ideais?',
     hint: 'PRIMEIROS ADOTANTES',
+    template: [
+      '1. [Perfil demográfico]',
+      '2. [Comportamentos específicos]',
+      '3. [Necessidades comuns]',
+      'Ex Airbnb inicial: 1. Viajantes millennials, 2. Buscam experiências locais, 3. Orçamento limitado'
+    ],
     borderColor: 'border-[#F5DEB3]',
     icon: Users
   },
   metrics: {
     title: 'MÉTRICAS CHAVE',
     subtitle: 'MEDIR VALOR',
-    placeholder: 'Números que mostram o sucesso',
-    hint: 'Métricas principais',
+    placeholder: 'Indicadores principais de sucesso',
+    hint: 'Métricas que mostram crescimento',
+    template: [
+      '1. [Aquisição: CAC, Taxa de conversão]',
+      '2. [Ativação: Usuários ativos, NPS]',
+      '3. [Retenção: Churn, LTV]',
+      'Ex SaaS: 1. MRR/ARR, 2. Churn rate < 2%, 3. CAC recuperado em 12 meses'
+    ],
     borderColor: 'border-[#E6E6FA]',
     icon: BarChart2
   },
   channels: {
     title: 'CANAIS',
     subtitle: 'ENTREGAR VALOR',
-    placeholder: 'Caminho até os clientes',
-    hint: 'Como você alcança seus clientes',
+    placeholder: 'Como você alcança seus clientes?',
+    hint: 'Canais de aquisição e distribuição',
+    template: [
+      '1. [Canais de aquisição]',
+      '2. [Canais de distribuição]',
+      '3. [Estratégias de crescimento]',
+      'Ex Dropbox: 1. Marketing viral (convites), 2. Freemium, 3. Integrações com apps'
+    ],
     borderColor: 'border-[#ADD8E6]',
     icon: Share2
   },
   costs: {
     title: 'ESTRUTURA DE CUSTOS',
     subtitle: 'CAPTURAR VALOR',
-    placeholder: 'Custos de operação do negócio',
-    hint: 'Principais custos',
+    placeholder: 'Principais custos do negócio',
+    hint: 'Custos fixos e variáveis',
+    template: [
+      '1. [Custos fixos: equipe, infraestrutura]',
+      '2. [Custos variáveis: marketing, vendas]',
+      '3. [Custos de aquisição e operação]',
+      'Ex SaaS B2B: 1. Desenvolvimento (60%), 2. Marketing/Vendas (30%), 3. Infraestrutura (10%)'
+    ],
     borderColor: 'border-[#90EE90]',
     icon: DollarSign
   },
   revenue: {
     title: 'FONTES DE RECEITA',
     subtitle: 'CAPTURAR VALOR',
-    placeholder: 'Modelo de receita',
-    hint: 'Como você ganha dinheiro',
+    placeholder: 'Como o negócio ganha dinheiro?',
+    hint: 'Modelos de monetização',
+    template: [
+      '1. [Modelo principal de receita]',
+      '2. [Fontes secundárias]',
+      '3. [Estratégia de preços]',
+      'Ex Slack: 1. Assinatura por usuário, 2. Enterprise plans, 3. Freemium com limite de mensagens'
+    ],
     borderColor: 'border-[#90EE90]',
     icon: Wallet
   }

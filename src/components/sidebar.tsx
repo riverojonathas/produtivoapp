@@ -35,6 +35,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { useTheme } from '@/providers/theme-provider'
 
 const menuItems = [
   {
@@ -92,7 +93,8 @@ const menuItems = [
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { theme, setTheme } = usePreferences()
+  const { theme, setTheme } = useTheme()
+  const isDark = theme === 'dark'
   const { isCollapsed, setIsCollapsed } = useAutoCollapse()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const { isAdmin } = useAdmin()
@@ -120,12 +122,8 @@ export function Sidebar() {
     !item.adminOnly || (item.adminOnly && isAdmin)
   )
 
-  const handleThemeToggle = async () => {
-    try {
-      await setTheme(theme === 'light' ? 'dark' : 'light')
-    } catch (error) {
-      console.error('Erro ao alternar tema:', error)
-    }
+  const handleThemeToggle = () => {
+    setTheme(isDark ? 'light' : 'dark')
   }
 
   return (
@@ -216,7 +214,6 @@ export function Sidebar() {
                     <TooltipContent 
                       side="right" 
                       className="text-[11px] font-medium"
-                      forceMount={false}
                     >
                       {item.title}
                     </TooltipContent>
@@ -243,9 +240,9 @@ export function Sidebar() {
                 size="icon"
                 onClick={handleThemeToggle}
                 className="h-7 w-7 p-0"
-                title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+                title={isDark ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
               >
-                {theme === 'dark' ? (
+                {isDark ? (
                   <Sun className="h-3.5 w-3.5" />
                 ) : (
                   <Moon className="h-3.5 w-3.5" />
