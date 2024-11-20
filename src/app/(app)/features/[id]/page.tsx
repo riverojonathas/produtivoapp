@@ -33,6 +33,7 @@ import { IFeature, IUserStory } from '@/types/feature'
 import { Avatar } from '@/components/ui/avatar'
 import { AddDependencyDialog } from '@/components/features/add-dependency-dialog'
 import { FeatureStatusSelect } from '@/components/features/feature-status-select'
+import { FeaturePrioritySelect } from '@/components/features/feature-priority-select'
 
 interface FeaturePageProps {
   params: Promise<{ id: string }>
@@ -174,6 +175,17 @@ export default function FeaturePage({ params }: FeaturePageProps) {
                         data: { status: newStatus }
                       })
                       toast.success('Status atualizado com sucesso')
+                    }}
+                    size="sm"
+                  />
+                  <FeaturePrioritySelect
+                    priority={feature.priority}
+                    onPriorityChange={async (newPriority) => {
+                      await updateFeature.mutateAsync({
+                        id: feature.id,
+                        data: { priority: newPriority }
+                      })
+                      toast.success('Prioridade atualizada com sucesso')
                     }}
                     size="sm"
                   />
@@ -404,14 +416,17 @@ export default function FeaturePage({ params }: FeaturePageProps) {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-3 bg-[var(--color-background-subtle)] rounded-lg">
                   <span className="text-sm">Prioridade</span>
-                  <Badge variant="secondary" className={cn(
-                    "text-xs",
-                    feature.priority === 'high' && "bg-red-100 text-red-700",
-                    feature.priority === 'medium' && "bg-yellow-100 text-yellow-700",
-                    feature.priority === 'low' && "bg-green-100 text-green-700"
-                  )}>
-                    {feature.priority}
-                  </Badge>
+                  <FeaturePrioritySelect
+                    priority={feature.priority}
+                    onPriorityChange={async (newPriority) => {
+                      await updateFeature.mutateAsync({
+                        id: feature.id,
+                        data: { priority: newPriority }
+                      })
+                      toast.success('Prioridade atualizada com sucesso')
+                    }}
+                    size="sm"
+                  />
                 </div>
 
                 {feature.start_date && (

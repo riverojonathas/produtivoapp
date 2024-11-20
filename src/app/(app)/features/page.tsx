@@ -58,6 +58,8 @@ import { TableColumnsConfig, TableColumn } from '@/components/features/table-col
 import { useUserPreferences } from '@/hooks/use-user-preferences'
 import { FeatureStatusSelect } from '@/components/features/feature-status-select'
 import { FEATURE_STATUS, FeatureStatus } from '@/types/feature'
+import { FeaturePrioritySelect } from '@/components/features/feature-priority-select'
+import { FEATURE_PRIORITY, FeaturePriority } from '@/types/feature'
 
 type ViewMode = 'grid' | 'list' | 'table' | 'kanban'
 
@@ -291,23 +293,28 @@ export default function FeaturesPage() {
         {/* Status e Prioridade */}
         <div className="flex items-center justify-between text-xs text-[var(--color-text-secondary)]">
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className={cn(
-              "text-xs",
-              feature.status === 'done' && "bg-emerald-100 text-emerald-700",
-              feature.status === 'doing' && "bg-blue-100 text-blue-700",
-              feature.status === 'blocked' && "bg-red-100 text-red-700",
-              feature.status === 'backlog' && "bg-gray-100 text-gray-700"
-            )}>
-              {feature.status}
-            </Badge>
-            <Badge variant="secondary" className={cn(
-              "text-xs",
-              feature.priority === 'high' && "bg-red-100 text-red-700",
-              feature.priority === 'medium' && "bg-yellow-100 text-yellow-700",
-              feature.priority === 'low' && "bg-green-100 text-green-700"
-            )}>
-              {feature.priority}
-            </Badge>
+            <FeatureStatusSelect
+              status={feature.status}
+              onStatusChange={async (newStatus) => {
+                await updateFeature.mutateAsync({
+                  id: feature.id,
+                  data: { status: newStatus }
+                })
+                toast.success('Status atualizado com sucesso')
+              }}
+              size="sm"
+            />
+            <FeaturePrioritySelect
+              priority={feature.priority}
+              onPriorityChange={async (newPriority) => {
+                await updateFeature.mutateAsync({
+                  id: feature.id,
+                  data: { priority: newPriority }
+                })
+                toast.success('Prioridade atualizada com sucesso')
+              }}
+              size="sm"
+            />
           </div>
           <span>
             {format(new Date(feature.created_at), "dd MMM, yy", { locale: ptBR })}
@@ -374,14 +381,17 @@ export default function FeaturesPage() {
                   case 'priority':
                     return (
                       <TableCell key={column.id}>
-                        <Badge variant="secondary" className={cn(
-                          "text-xs",
-                          feature.priority === 'high' && "bg-red-100 text-red-700",
-                          feature.priority === 'medium' && "bg-yellow-100 text-yellow-700",
-                          feature.priority === 'low' && "bg-green-100 text-green-700"
-                        )}>
-                          {feature.priority}
-                        </Badge>
+                        <FeaturePrioritySelect
+                          priority={feature.priority}
+                          onPriorityChange={async (newPriority) => {
+                            await updateFeature.mutateAsync({
+                              id: feature.id,
+                              data: { priority: newPriority }
+                            })
+                            toast.success('Prioridade atualizada com sucesso')
+                          }}
+                          size="sm"
+                        />
                       </TableCell>
                     )
                   case 'stories':
@@ -498,20 +508,41 @@ export default function FeaturesPage() {
     </div>
   )
 
-  const handleDrop = async (featureId: string, newStatus: FeatureStatus) => {
-    try {
-      await updateFeature.mutateAsync({
-        id: featureId,
-        data: { status: newStatus }
-      })
-      toast.success('Status atualizado com sucesso')
-    } catch (error) {
-      console.error('Erro ao atualizar status:', error)
-      toast.error('Erro ao atualizar status')
-    }
-  }
-
   const renderFeatureKanban = (features: IFeature[]) => {
+    const handleDragOver = (e: React.DragEvent) => {
+      e.preventDefault()
+      // Adicionar visual feedback
+      const dropZone = e.currentTarget
+      dropZone.classList.add('bg-[var(--color-background-elevated)]')
+    }
+
+    const handleDragLeave = (e: React.DragEvent) => {
+      // Remover visual feedback
+      const dropZone = e.currentTarget
+      dropZone.classList.remove('bg-[var(--color-background-elevated)]')
+    }
+
+    const handleDrop = async (e: React.DragEvent, newStatus: FeatureStatus) => {
+      e.preventDefault()
+      // Remover visual feedback
+      const dropZone = e.currentTarget
+      dropZone.classList.remove('bg-[var(--color-background-elevated)]')
+
+      const featureId = e.dataTransfer.getData('feature_id')
+      if (!featureId) return
+
+      try {
+        await updateFeature.mutateAsync({
+          id: featureId,
+          data: { status: newStatus }
+        })
+        toast.success('Status atualizado com sucesso')
+      } catch (error) {
+        console.error('Erro ao atualizar status:', error)
+        toast.error('Erro ao atualizar status')
+      }
+    }
+
     return (
       <div className="grid grid-cols-4 gap-4 h-full">
         {Object.entries(FEATURE_STATUS).map(([status, config]) => (
@@ -534,26 +565,37 @@ export default function FeaturesPage() {
 
             {/* Lista de Cards */}
             <div 
-              className="flex-1 bg-[var(--color-background-subtle)] rounded-lg p-2 space-y-2 overflow-auto"
-              onDragOver={(e) => e.preventDefault()}
+              className="flex-1 bg-[var(--color-background-subtle)] rounded-lg p-2 space-y-2 overflow-auto transition-colors"
+              onDragOver={(e) => {
+                e.preventDefault()
+                e.currentTarget.classList.add('bg-[var(--color-background-elevated)]')
+              }}
+              onDragLeave={(e) => {
+                e.currentTarget.classList.remove('bg-[var(--color-background-elevated)]')
+              }}
               onDrop={(e) => {
                 e.preventDefault()
+                e.currentTarget.classList.remove('bg-[var(--color-background-elevated)]')
                 const featureId = e.dataTransfer.getData('feature_id')
                 if (featureId) {
-                  handleDrop(featureId, status as FeatureStatus)
+                  handleDrop(e, status as FeatureStatus)
                 }
               }}
             >
               {features
                 .filter(f => f.status === status)
                 .map(feature => (
-                  <Card
+                  <div
                     key={feature.id}
-                    className="p-3 cursor-pointer hover:shadow-md transition-all duration-200 bg-[var(--color-background-primary)]"
+                    className="p-3 cursor-move hover:shadow-md transition-all duration-200 bg-[var(--color-background-primary)] rounded-lg"
                     onClick={() => router.push(`/features/${feature.id}`)}
-                    draggable
+                    draggable="true"
                     onDragStart={(e) => {
                       e.dataTransfer.setData('feature_id', feature.id)
+                      e.currentTarget.classList.add('opacity-50')
+                    }}
+                    onDragEnd={(e) => {
+                      e.currentTarget.classList.remove('opacity-50')
                     }}
                   >
                     <div className="space-y-2">
@@ -571,14 +613,17 @@ export default function FeaturesPage() {
 
                       {/* Métricas e Tags */}
                       <div className="flex items-center justify-between text-xs">
-                        <Badge variant="secondary" className={cn(
-                          "text-xs",
-                          feature.priority === 'high' && "bg-red-100 text-red-700",
-                          feature.priority === 'medium' && "bg-yellow-100 text-yellow-700",
-                          feature.priority === 'low' && "bg-green-100 text-green-700"
-                        )}>
-                          {feature.priority}
-                        </Badge>
+                        <FeaturePrioritySelect
+                          priority={feature.priority}
+                          onPriorityChange={async (newPriority) => {
+                            await updateFeature.mutateAsync({
+                              id: feature.id,
+                              data: { priority: newPriority }
+                            })
+                            toast.success('Prioridade atualizada com sucesso')
+                          }}
+                          size="sm"
+                        />
 
                         <div className="flex items-center gap-2 text-[var(--color-text-secondary)]">
                           {feature.stories?.length > 0 && (
@@ -596,8 +641,14 @@ export default function FeaturesPage() {
                         </div>
                       </div>
                     </div>
-                  </Card>
+                  </div>
                 ))}
+
+              {features.filter(f => f.status === status).length === 0 && (
+                <div className="flex items-center justify-center h-20 text-[var(--color-text-secondary)]">
+                  <p className="text-xs">Solte uma feature aqui</p>
+                </div>
+              )}
             </div>
           </div>
         ))}

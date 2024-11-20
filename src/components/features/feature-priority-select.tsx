@@ -10,32 +10,32 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { FEATURE_STATUS, FeatureStatus } from '@/types/feature'
+import { FEATURE_PRIORITY, FeaturePriority } from '@/types/feature'
 import { toast } from 'sonner'
 
-interface FeatureStatusSelectProps {
-  status: FeatureStatus
-  onStatusChange: (status: FeatureStatus) => Promise<void>
+interface FeaturePrioritySelectProps {
+  priority: FeaturePriority
+  onPriorityChange: (priority: FeaturePriority) => Promise<void>
   size?: 'sm' | 'default'
   disabled?: boolean
 }
 
-export function FeatureStatusSelect({ 
-  status, 
-  onStatusChange,
+export function FeaturePrioritySelect({ 
+  priority, 
+  onPriorityChange,
   size = 'default',
   disabled = false
-}: FeatureStatusSelectProps) {
+}: FeaturePrioritySelectProps) {
   const [isPending, setIsPending] = useState(false)
-  const currentStatus = FEATURE_STATUS[status]
+  const currentPriority = FEATURE_PRIORITY[priority]
 
-  const handleStatusChange = async (newStatus: FeatureStatus) => {
+  const handlePriorityChange = async (newPriority: FeaturePriority) => {
     try {
       setIsPending(true)
-      await onStatusChange(newStatus)
+      await onPriorityChange(newPriority)
     } catch (error) {
-      console.error('Erro ao atualizar status:', error)
-      toast.error('Erro ao atualizar status')
+      console.error('Erro ao atualizar prioridade:', error)
+      toast.error('Erro ao atualizar prioridade')
     } finally {
       setIsPending(false)
     }
@@ -50,35 +50,30 @@ export function FeatureStatusSelect({
           className="px-2 h-7"
           disabled={disabled || isPending}
         >
-          <div className="flex items-center gap-2">
-            <currentStatus.icon className={cn(
-              "w-3.5 h-3.5",
-              currentStatus.color.replace('bg-', 'text-').replace('-100', '-500')
-            )} />
-            <Badge variant="secondary" className={cn(
-              "text-xs font-normal",
-              currentStatus.color
-            )}>
-              {currentStatus.label}
-            </Badge>
-          </div>
+          <Badge variant="secondary" className={cn(
+            "text-xs font-normal",
+            currentPriority.color
+          )}>
+            {currentPriority.label}
+          </Badge>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent 
         align="end" 
         className="w-[180px] bg-[var(--color-background-primary)] border border-[var(--color-border)]"
       >
-        {Object.entries(FEATURE_STATUS).map(([key, status]) => (
+        {Object.entries(FEATURE_PRIORITY).map(([key, priority]) => (
           <DropdownMenuItem
             key={key}
-            onClick={() => handleStatusChange(key as FeatureStatus)}
+            onClick={() => handlePriorityChange(key as FeaturePriority)}
             className="flex items-center gap-2 hover:bg-[var(--color-background-elevated)] focus:bg-[var(--color-background-elevated)] cursor-pointer"
           >
-            <status.icon className={cn(
-              "w-3.5 h-3.5",
-              status.color.replace('bg-', 'text-').replace('-100', '-500')
-            )} />
-            <span>{status.label}</span>
+            <Badge variant="secondary" className={cn(
+              "text-xs font-normal",
+              priority.color
+            )}>
+              {priority.label}
+            </Badge>
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

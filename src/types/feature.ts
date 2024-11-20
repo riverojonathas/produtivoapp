@@ -77,6 +77,31 @@ export const FEATURE_STATUS = {
   }
 } as const
 
+export type FeaturePriority = 'low' | 'medium' | 'high' | 'urgent'
+
+export const FEATURE_PRIORITY = {
+  low: {
+    label: 'Baixa',
+    value: 'low' as const,
+    color: 'bg-green-100 text-green-700',
+  },
+  medium: {
+    label: 'Média',
+    value: 'medium' as const,
+    color: 'bg-yellow-100 text-yellow-700',
+  },
+  high: {
+    label: 'Alta',
+    value: 'high' as const,
+    color: 'bg-red-100 text-red-700',
+  },
+  urgent: {
+    label: 'Urgente',
+    value: 'urgent' as const,
+    color: 'bg-purple-100 text-purple-700',
+  }
+} as const
+
 export interface IUserStory {
   id: string
   title: string

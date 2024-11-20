@@ -80,95 +80,60 @@ export function useFeatures(id?: string): UseFeatureReturn {
     mutateAsync: async ({ id, data }: { id: string, data: Partial<IFeature> }) => {
       setIsPending(true)
       try {
-        if (data.dependencies) {
-          const { error: deleteError } = await supabase
-            .from('feature_dependencies')
-            .delete()
-            .eq('feature_id', id)
+        const updateData: Partial<IFeature> = {
+          ...data,
+          updated_at: new Date().toISOString()
+        }
 
-          if (deleteError) throw deleteError
+        if (updateData.status && !['backlog', 'doing', 'done', 'blocked'].includes(updateData.status)) {
+          console.error('Status inválido:', updateData.status)
+          throw new Error(`Status inválido: ${updateData.status}. Use: backlog, doing, done ou blocked`)
+        }
 
-          if (data.dependencies.length > 0) {
-            const dependencyRecords = data.dependencies.map(dep => ({
-              feature_id: id,
-              dependent_id: dep.id,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            }))
+        const {
+          dependencies,
+          dependent_features,
+          stories,
+          created_at,
+          id: featureId,
+          ...cleanData
+        } = updateData
 
-            const { error: insertError } = await supabase
-              .from('feature_dependencies')
-              .insert(dependencyRecords)
+        console.log('Dados para atualização:', cleanData)
 
-            if (insertError) throw insertError
-          }
+        const { data: updatedFeature, error } = await supabase
+          .from('features')
+          .update(cleanData)
+          .eq('id', id)
+          .select(`
+            *,
+            stories (*)
+          `)
+          .single()
 
-          const { dependencies, ...updateData } = data
-          
-          const { data: updatedFeature, error } = await supabase
-            .from('features')
-            .update(updateData)
-            .eq('id', id)
-            .select(`
-              *,
-              stories (*),
-              feature_dependencies!feature_dependencies_feature_id_fkey (
-                dependent:features!feature_dependencies_dependent_id_fkey (
-                  id,
-                  title,
-                  status
-                )
-              )
-            `)
-            .single()
+        if (error) {
+          console.error('Erro detalhado:', error)
+          throw error
+        }
 
-          if (error) throw error
-
-          const transformedFeature = {
+        setFeatures(prev => prev.map(f => 
+          f.id === id ? {
+            ...f,
             ...updatedFeature,
-            dependencies: updatedFeature.feature_dependencies?.map(d => d.dependent) || []
-          }
+            dependencies: f.dependencies,
+            dependent_features: f.dependent_features,
+            stories: updatedFeature.stories
+          } : f
+        ))
 
-          setFeatures(prev => prev.map(f => 
-            f.id === id ? transformedFeature : f
-          ))
-
-          return transformedFeature
-        } else {
-          const { dependencies, dependent_features, stories, ...updateData } = data
-
-          const { data: updatedFeature, error } = await supabase
-            .from('features')
-            .update(updateData)
-            .eq('id', id)
-            .select(`
-              *,
-              stories (*),
-              feature_dependencies!feature_dependencies_feature_id_fkey (
-                dependent:features!feature_dependencies_dependent_id_fkey (
-                  id,
-                  title,
-                  status
-                )
-              )
-            `)
-            .single()
-
-          if (error) throw error
-
-          const transformedFeature = {
-            ...updatedFeature,
-            dependencies: updatedFeature.feature_dependencies?.map(d => d.dependent) || []
-          }
-
-          setFeatures(prev => prev.map(f => 
-            f.id === id ? transformedFeature : f
-          ))
-
-          return transformedFeature
+        return {
+          ...updatedFeature,
+          dependencies: updatedFeature.dependencies || [],
+          dependent_features: updatedFeature.dependent_features || [],
+          stories: updatedFeature.stories || []
         }
       } catch (error) {
-        console.error('Erro ao atualizar feature:', error)
+        console.error('Erro detalhado ao atualizar feature:', error)
         throw error
       } finally {
         setIsPending(false)
