@@ -1,197 +1,248 @@
 'use client'
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
-import { toast } from 'sonner'
-import { Feature } from '@/types/product'
+import { useState, useEffect } from 'react'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { IFeature } from '@/types/feature'
 
-interface CreateFeatureInput {
-  title: string
-  description: {
-    what: string
-    why: string
-    how: string
-    who: string
+interface UseFeatureReturn {
+  features: IFeature[]
+  feature?: IFeature
+  isLoading: boolean
+  createFeature: {
+    mutateAsync: (data: Partial<IFeature>) => Promise<IFeature>
+    isPending: boolean
   }
-  status: 'backlog' | 'doing' | 'done' | 'blocked'
-  priority: 'low' | 'medium' | 'high' | 'urgent'
-  start_date?: string | null
-  end_date?: string | null
-  product_id: string
-  owner_id?: string | null
-  dependencies?: string[]
-  assignees?: string[]
-  tags?: string[]
-  progress?: number
+  updateFeature: {
+    mutateAsync: (params: { id: string, data: Partial<IFeature> }) => Promise<IFeature>
+    isPending: boolean
+  }
+  deleteFeature: {
+    mutateAsync: (id: string) => Promise<void>
+    isPending: boolean
+  }
+  refresh: () => Promise<void>
 }
 
-export function useFeatures(featureId?: string) {
-  const queryClient = useQueryClient()
+export function useFeatures(id?: string): UseFeatureReturn {
+  const [features, setFeatures] = useState<IFeature[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isPending, setIsPending] = useState(false)
+  const supabase = createClientComponentClient()
 
-  // Query para listar features
-  const query = useQuery<Feature[]>({
-    queryKey: ['features'],
-    queryFn: async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        
-        if (!session) {
-          throw new Error('Não autenticado')
-        }
+  const loadFeatures = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('features')
+        .select(`
+          *,
+          stories (*),
+          feature_dependencies!feature_dependencies_feature_id_fkey (
+            dependent:features!feature_dependencies_dependent_id_fkey (
+              id,
+              title,
+              status
+            )
+          ),
+          dependent_features:feature_dependencies!feature_dependencies_dependent_id_fkey (
+            feature:features!feature_dependencies_feature_id_fkey (
+              id,
+              title,
+              status
+            )
+          )
+        `)
+        .order('created_at', { ascending: false })
 
-        const { data, error } = await supabase
-          .from('features')
-          .select('*')
-          .order('created_at', { ascending: false })
-
-        if (error) {
-          console.error('Erro ao listar features:', error)
-          throw error
-        }
-
-        return data || []
-      } catch (error) {
-        console.error('Erro na query:', error)
+      if (error) {
+        console.error('Erro detalhado:', error)
         throw error
       }
+
+      const transformedData = data?.map(feature => ({
+        ...feature,
+        dependencies: feature.feature_dependencies?.map(d => d.dependent) || [],
+        dependent_features: feature.dependent_features?.map(d => d.feature) || []
+      }))
+
+      setFeatures(transformedData || [])
+    } catch (error) {
+      console.error('Erro ao carregar features:', error)
+    } finally {
+      setIsLoading(false)
     }
-  })
+  }
 
-  // Mutation para criar feature
-  const createFeature = useMutation({
-    mutationFn: async (input: CreateFeatureInput) => {
+  useEffect(() => {
+    loadFeatures()
+  }, [])
+
+  const updateFeature = {
+    mutateAsync: async ({ id, data }: { id: string, data: Partial<IFeature> }) => {
+      setIsPending(true)
       try {
-        const { data: { session } } = await supabase.auth.getSession()
-        
-        if (!session) {
-          throw new Error('Usuário não autenticado')
+        if (data.dependencies) {
+          const { error: deleteError } = await supabase
+            .from('feature_dependencies')
+            .delete()
+            .eq('feature_id', id)
+
+          if (deleteError) throw deleteError
+
+          if (data.dependencies.length > 0) {
+            const dependencyRecords = data.dependencies.map(dep => ({
+              feature_id: id,
+              dependent_id: dep.id,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }))
+
+            const { error: insertError } = await supabase
+              .from('feature_dependencies')
+              .insert(dependencyRecords)
+
+            if (insertError) throw insertError
+          }
+
+          const { dependencies, ...updateData } = data
+          
+          const { data: updatedFeature, error } = await supabase
+            .from('features')
+            .update(updateData)
+            .eq('id', id)
+            .select(`
+              *,
+              stories (*),
+              feature_dependencies!feature_dependencies_feature_id_fkey (
+                dependent:features!feature_dependencies_dependent_id_fkey (
+                  id,
+                  title,
+                  status
+                )
+              )
+            `)
+            .single()
+
+          if (error) throw error
+
+          const transformedFeature = {
+            ...updatedFeature,
+            dependencies: updatedFeature.feature_dependencies?.map(d => d.dependent) || []
+          }
+
+          setFeatures(prev => prev.map(f => 
+            f.id === id ? transformedFeature : f
+          ))
+
+          return transformedFeature
+        } else {
+          const { dependencies, dependent_features, stories, ...updateData } = data
+
+          const { data: updatedFeature, error } = await supabase
+            .from('features')
+            .update(updateData)
+            .eq('id', id)
+            .select(`
+              *,
+              stories (*),
+              feature_dependencies!feature_dependencies_feature_id_fkey (
+                dependent:features!feature_dependencies_dependent_id_fkey (
+                  id,
+                  title,
+                  status
+                )
+              )
+            `)
+            .single()
+
+          if (error) throw error
+
+          const transformedFeature = {
+            ...updatedFeature,
+            dependencies: updatedFeature.feature_dependencies?.map(d => d.dependent) || []
+          }
+
+          setFeatures(prev => prev.map(f => 
+            f.id === id ? transformedFeature : f
+          ))
+
+          return transformedFeature
         }
+      } catch (error) {
+        console.error('Erro ao atualizar feature:', error)
+        throw error
+      } finally {
+        setIsPending(false)
+      }
+    },
+    isPending
+  }
 
-        // Validações
-        if (!input.title?.trim()) {
-          throw new Error('Título é obrigatório')
-        }
+  const createFeature = {
+    mutateAsync: async (data: Partial<IFeature>) => {
+      setIsPending(true)
+      try {
+        const { dependencies, dependent_features, stories, ...createData } = data
 
-        if (!input.product_id) {
-          throw new Error('ID do produto é obrigatório')
-        }
-
-        // Preparar dados
-        const featureData = {
-          title: input.title.trim(),
-          description: input.description,
-          status: input.status,
-          priority: input.priority,
-          start_date: input.start_date || null,
-          end_date: input.end_date || null,
-          product_id: input.product_id,
-          owner_id: session.user.id,
-          dependencies: input.dependencies || [],
-          assignees: input.assignees || [],
-          tags: input.tags || [],
-          progress: input.progress || 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-
-        console.log('Dados para inserção:', featureData)
-
-        // Inserir feature
-        const { data, error } = await supabase
+        const { data: newFeature, error } = await supabase
           .from('features')
-          .insert([featureData])
-          .select()
+          .insert([createData])
+          .select(`
+            *,
+            stories (*)
+          `)
           .single()
 
         if (error) {
-          console.error('Erro do Supabase:', error)
-          throw new Error(error.message)
+          console.error('Erro detalhado:', error)
+          throw error
         }
 
-        if (!data) {
-          throw new Error('Feature não foi criada')
-        }
-
-        return data
+        setFeatures(prev => [newFeature, ...prev])
+        return newFeature
       } catch (error) {
         console.error('Erro ao criar feature:', error)
         throw error
+      } finally {
+        setIsPending(false)
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['features'] })
-      toast.success('Feature criada com sucesso')
-    },
-    onError: (error: Error) => {
-      console.error('Erro na mutação:', error)
-      toast.error(error.message || 'Erro ao criar feature')
-    }
-  })
+    isPending
+  }
 
-  // Query para buscar uma feature específica
-  const getFeature = useQuery({
-    queryKey: ['feature', featureId],
-    queryFn: async () => {
-      if (!featureId) return null
+  const deleteFeature = {
+    mutateAsync: async (id: string) => {
+      setIsPending(true)
+      try {
+        const { error } = await supabase
+          .from('features')
+          .delete()
+          .eq('id', id)
 
-      const { data, error } = await supabase
-        .from('features')
-        .select('*')
-        .eq('id', featureId)
-        .single()
+        if (error) {
+          console.error('Erro detalhado:', error)
+          throw error
+        }
 
-      if (error) {
-        console.error('Erro ao buscar feature:', error)
+        setFeatures(prev => prev.filter(f => f.id !== id))
+      } catch (error) {
+        console.error('Erro ao excluir feature:', error)
         throw error
+      } finally {
+        setIsPending(false)
       }
-
-      return data
     },
-    enabled: !!featureId
-  })
+    isPending
+  }
 
-  // Mutation para atualizar feature
-  const updateFeature = useMutation({
-    mutationFn: async ({ id, data }: { id: string, data: Partial<Feature> }) => {
-      const { data: updatedFeature, error } = await supabase
-        .from('features')
-        .update({ ...data, updated_at: new Date().toISOString() })
-        .eq('id', id)
-        .select()
-        .single()
-
-      if (error) throw error
-      return updatedFeature
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['features'] })
-      toast.success('Feature atualizada com sucesso')
-    }
-  })
-
-  // Mutation para excluir feature
-  const deleteFeature = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('features')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['features'] })
-      toast.success('Feature excluída com sucesso')
-    }
-  })
+  const feature = id ? features.find(f => f.id === id) : undefined
 
   return {
-    features: query.data,
-    feature: getFeature.data,
-    isLoading: query.isLoading || (!!featureId && getFeature.isLoading),
-    error: query.error || getFeature.error,
+    features,
+    feature,
+    isLoading,
     createFeature,
     updateFeature,
-    deleteFeature
+    deleteFeature,
+    refresh: loadFeatures
   }
 } 

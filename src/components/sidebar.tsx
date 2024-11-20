@@ -83,11 +83,6 @@ const menuItems = [
     href: "/admin-alerts",
     icon: AlertTriangle,
     adminOnly: true,
-  },
-  {
-    title: "Configurações",
-    href: "/settings",
-    icon: Settings,
   }
 ]
 
