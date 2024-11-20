@@ -42,7 +42,10 @@ export function useProducts(id?: string): UseProductsReturn {
         `)
         .order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (error) {
+        console.error('Erro ao carregar produtos:', error)
+        throw error
+      }
 
       // Transformar os dados para manter a estrutura esperada
       const transformedData = data?.map(product => ({
@@ -53,6 +56,7 @@ export function useProducts(id?: string): UseProductsReturn {
       setProducts(transformedData || [])
     } catch (error) {
       console.error('Erro ao carregar produtos:', error)
+      throw error
     } finally {
       setIsLoading(false)
     }
@@ -66,9 +70,12 @@ export function useProducts(id?: string): UseProductsReturn {
     mutateAsync: async (data: Partial<IProduct>) => {
       setIsPending(true)
       try {
+        // Remover campos que não devem ser enviados para o banco
+        const { tags, product_tags, product_metrics, product_risks, ...productData } = data
+
         const { data: newProduct, error } = await supabase
           .from('products')
-          .insert([data])
+          .insert([productData])
           .select(`
             *,
             product_metrics (*),
@@ -77,7 +84,10 @@ export function useProducts(id?: string): UseProductsReturn {
           `)
           .single()
 
-        if (error) throw error
+        if (error) {
+          console.error('Erro ao criar produto:', error)
+          throw error
+        }
 
         // Transformar os dados do novo produto
         const transformedProduct = {
@@ -102,9 +112,12 @@ export function useProducts(id?: string): UseProductsReturn {
     mutateAsync: async ({ id, data }: { id: string, data: Partial<IProduct> }) => {
       setIsPending(true)
       try {
+        // Remover campos que não devem ser enviados para o banco
+        const { tags, product_tags, product_metrics, product_risks, ...updateData } = data
+
         const { data: updatedProduct, error } = await supabase
           .from('products')
-          .update(data)
+          .update(updateData)
           .eq('id', id)
           .select(`
             *,
@@ -114,7 +127,14 @@ export function useProducts(id?: string): UseProductsReturn {
           `)
           .single()
 
-        if (error) throw error
+        if (error) {
+          console.error('Erro ao atualizar produto:', error)
+          throw new Error(error.message || 'Erro ao atualizar produto')
+        }
+
+        if (!updatedProduct) {
+          throw new Error('Produto não encontrado')
+        }
 
         // Transformar os dados do produto atualizado
         const transformedProduct = {
@@ -126,8 +146,9 @@ export function useProducts(id?: string): UseProductsReturn {
         
         return transformedProduct
       } catch (error) {
-        console.error('Erro ao atualizar produto:', error)
-        throw error
+        const message = error instanceof Error ? error.message : 'Erro ao atualizar produto'
+        console.error('Erro ao atualizar produto:', message)
+        throw new Error(message)
       } finally {
         setIsPending(false)
       }
@@ -144,13 +165,17 @@ export function useProducts(id?: string): UseProductsReturn {
           .delete()
           .eq('id', id)
 
-        if (error) throw error
+        if (error) {
+          console.error('Erro ao excluir produto:', error)
+          throw new Error(error.message || 'Erro ao excluir produto')
+        }
 
         // Remover o produto da lista local
         setProducts(prev => prev.filter(p => p.id !== id))
       } catch (error) {
-        console.error('Erro ao excluir produto:', error)
-        throw error
+        const message = error instanceof Error ? error.message : 'Erro ao excluir produto'
+        console.error('Erro ao excluir produto:', message)
+        throw new Error(message)
       } finally {
         setIsPending(false)
       }

@@ -55,8 +55,9 @@ export default function FeaturesPage() {
   ]
 
   const filteredFeatures = features.filter(feature =>
-    feature.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    feature.description.what.toLowerCase().includes(searchTerm.toLowerCase())
+    feature.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    feature.description?.what?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    false
   )
 
   const renderFeatureCard = (feature: any) => (
@@ -70,7 +71,7 @@ export default function FeaturesPage() {
           <div>
             <h3 className="text-sm font-medium">{feature.title}</h3>
             <p className="mt-1 text-xs text-[var(--color-text-secondary)] line-clamp-2">
-              {feature.description.what}
+              {feature.description?.what || 'Sem descrição'}
             </p>
           </div>
           <Badge variant="secondary" className={cn(
