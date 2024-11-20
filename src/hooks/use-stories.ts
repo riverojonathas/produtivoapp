@@ -1,176 +1,232 @@
 'use client'
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
-import { toast } from 'sonner'
+import { useState, useEffect } from 'react'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { IUserStory } from '@/types/story'
 
-interface Story {
-  id: string
-  feature_id: string
-  title: string
-  description: {
-    asA: string      // Persona/Usuário
-    iWant: string    // Ação desejada
-    soThat: string   // Benefício esperado
+interface UseStoriesReturn {
+  stories: IUserStory[]
+  story?: IUserStory
+  isLoading: boolean
+  createStory: {
+    mutateAsync: (data: Partial<IUserStory>) => Promise<IUserStory>
+    isPending: boolean
   }
-  acceptance_criteria: string[]
-  status: 'open' | 'in-progress' | 'completed' | 'blocked'
-  points: number
-  assignees: string[]
-  created_at: string
-  updated_at: string
-  owner_id: string
+  updateStory: {
+    mutateAsync: (params: { id: string, data: Partial<IUserStory> }) => Promise<IUserStory>
+    isPending: boolean
+  }
+  deleteStory: {
+    mutateAsync: (id: string) => Promise<void>
+    isPending: boolean
+  }
+  refresh: () => Promise<void>
 }
 
-interface CreateStoryInput {
-  title: string
-  description: {
-    asA: string
-    iWant: string
-    soThat: string
-  }
-  acceptance_criteria: string[]
-  status: Story['status']
-  points: number
-  feature_id: string
-  assignees?: string[]
-  owner_id?: string | null
-}
+export function useStories(id?: string): UseStoriesReturn {
+  const [stories, setStories] = useState<IUserStory[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isPending, setIsPending] = useState(false)
+  const supabase = createClientComponentClient()
 
-export function useStories(storyId?: string) {
-  const queryClient = useQueryClient()
-
-  const query = useQuery<Story[]>({
-    queryKey: ['stories'],
-    queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session) {
-        throw new Error('Não autenticado')
-      }
-
+  const loadStories = async () => {
+    try {
       const { data, error } = await supabase
         .from('stories')
         .select(`
           *,
           feature:features (
             id,
-            title,
-            status
+            title
+          ),
+          story_relationships!story_relationships_story_id_fkey (
+            related_story:stories!story_relationships_related_story_id_fkey (
+              id,
+              title,
+              status
+            ),
+            relationship_type
+          ),
+          related_to:story_relationships!story_relationships_related_story_id_fkey (
+            story:stories!story_relationships_story_id_fkey (
+              id,
+              title,
+              status
+            ),
+            relationship_type
           )
         `)
-        .eq('owner_id', session.user.id)
         .order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (error) {
+        console.error('Erro ao carregar histórias:', error)
+        throw error
+      }
 
-      return data || []
+      const transformedData = data?.map(story => ({
+        ...story,
+        related_stories: [
+          ...(story.story_relationships?.map(rel => ({
+            id: rel.related_story.id,
+            title: rel.related_story.title,
+            status: rel.related_story.status,
+            relationship_type: rel.relationship_type
+          })) || []),
+          ...(story.related_to?.map(rel => ({
+            id: rel.story.id,
+            title: rel.story.title,
+            status: rel.story.status,
+            relationship_type: rel.relationship_type === 'blocks' ? 'blocked_by' :
+              rel.relationship_type === 'blocked_by' ? 'blocks' :
+              rel.relationship_type
+          })) || [])
+        ]
+      })) || []
+
+      console.log('Histórias carregadas:', transformedData)
+      setStories(transformedData)
+    } catch (error) {
+      console.error('Erro ao carregar histórias:', error)
+    } finally {
+      setIsLoading(false)
     }
-  })
+  }
 
-  const createStory = useMutation({
-    mutationFn: async (input: CreateStoryInput) => {
+  useEffect(() => {
+    loadStories()
+  }, [])
+
+  const createStory = {
+    mutateAsync: async (data: Partial<IUserStory>) => {
+      setIsPending(true)
       try {
-        const { data: { session } } = await supabase.auth.getSession()
-        
-        if (!session) {
-          throw new Error('Usuário não autenticado')
-        }
-
         const storyData = {
-          ...input,
-          owner_id: session.user.id,
+          ...data,
+          description: {
+            asA: data.description?.asA || '',
+            iWant: data.description?.iWant || '',
+            soThat: data.description?.soThat || ''
+          },
+          points: data.points || 1,
+          status: data.status || 'open',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
 
-        const { data, error } = await supabase
+        console.log('Dados para criação:', storyData)
+
+        const { data: newStory, error } = await supabase
           .from('stories')
-          .insert(storyData)
-          .select()
+          .insert([storyData])
+          .select(`
+            *,
+            feature:features (
+              id,
+              title
+            )
+          `)
           .single()
 
-        if (error) throw error
+        if (error) {
+          console.error('Erro detalhado do Supabase:', error)
+          throw new Error(error.message || 'Erro ao criar história')
+        }
 
-        return data
+        if (!newStory) {
+          throw new Error('História não foi criada')
+        }
+
+        console.log('História criada com sucesso:', newStory)
+
+        setStories(prev => [newStory, ...prev])
+        return newStory
       } catch (error) {
-        console.error('Erro ao criar história:', error)
+        const message = error instanceof Error ? error.message : 'Erro desconhecido ao criar história'
+        console.error('Erro completo ao criar história:', error)
+        throw new Error(message)
+      } finally {
+        setIsPending(false)
+      }
+    },
+    isPending
+  }
+
+  const updateStory = {
+    mutateAsync: async ({ id, data }: { id: string, data: Partial<IUserStory> }) => {
+      setIsPending(true)
+      try {
+        const updateData = {
+          ...data,
+          updated_at: new Date().toISOString()
+        }
+
+        const { data: updatedStory, error } = await supabase
+          .from('stories')
+          .update(updateData)
+          .eq('id', id)
+          .select(`
+            *,
+            feature:features (
+              id,
+              title
+            )
+          `)
+          .single()
+
+        if (error) {
+          console.error('Erro ao atualizar história:', error)
+          throw error
+        }
+
+        setStories(prev => prev.map(s => 
+          s.id === id ? updatedStory : s
+        ))
+
+        return updatedStory
+      } catch (error) {
+        console.error('Erro ao atualizar história:', error)
         throw error
+      } finally {
+        setIsPending(false)
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['stories'] })
-      toast.success('História criada com sucesso')
-    }
-  })
+    isPending
+  }
 
-  const updateStory = useMutation({
-    mutationFn: async ({ id, data }: { id: string, data: Partial<Story> }) => {
-      const updateData = {
-        ...data,
-        updated_at: new Date().toISOString()
+  const deleteStory = {
+    mutateAsync: async (id: string) => {
+      setIsPending(true)
+      try {
+        const { error } = await supabase
+          .from('stories')
+          .delete()
+          .eq('id', id)
+
+        if (error) {
+          console.error('Erro ao excluir história:', error)
+          throw error
+        }
+
+        setStories(prev => prev.filter(s => s.id !== id))
+      } catch (error) {
+        console.error('Erro ao excluir história:', error)
+        throw error
+      } finally {
+        setIsPending(false)
       }
-
-      const { data: updatedStory, error } = await supabase
-        .from('stories')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single()
-
-      if (error) throw error
-      return updatedStory
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['stories'] })
-      toast.success('História atualizada com sucesso')
-    }
-  })
+    isPending
+  }
 
-  const deleteStory = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('stories')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['stories'] })
-      toast.success('História excluída com sucesso')
-    }
-  })
-
-  const getStory = useQuery({
-    queryKey: ['story', storyId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('stories')
-        .select(`
-          *,
-          feature:features (
-            id,
-            title,
-            status
-          )
-        `)
-        .eq('id', storyId)
-        .single()
-
-      if (error) throw error
-      return data
-    },
-    enabled: !!storyId
-  })
+  const story = id ? stories.find(s => s.id === id) : undefined
 
   return {
-    stories: query.data,
-    story: getStory.data,
-    isLoading: query.isLoading || (!!storyId && getStory.isLoading),
-    error: query.error || getStory.error,
+    stories,
+    story,
+    isLoading,
     createStory,
     updateStory,
-    deleteStory
+    deleteStory,
+    refresh: loadStories
   }
 } 

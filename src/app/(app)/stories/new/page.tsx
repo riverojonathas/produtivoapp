@@ -1,15 +1,14 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { ArrowLeft, ChevronRight, ChevronLeft } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight, Files } from 'lucide-react'
 import { useStories } from '@/hooks/use-stories'
 import { toast } from 'sonner'
-import { Card } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
+import { useFeatures } from '@/hooks/use-features'
 import {
   Select,
   SelectContent,
@@ -17,113 +16,107 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { IUserStory } from '@/types/story'
+import { StoryTemplateSelect } from '@/components/stories/story-template-select'
 
 type Step = 'basic' | 'description' | 'criteria'
 
-interface StoryForm {
-  title: string
-  description: {
-    asA: string      // Persona/Usuário
-    iWant: string    // Ação desejada
-    soThat: string   // Benefício esperado
-  }
-  acceptance_criteria: string[]
-  status: 'open' | 'in-progress' | 'completed' | 'blocked'
-  points: number
-  feature_id: string
-  assignees: string[]
-}
-
 const steps: Step[] = ['basic', 'description', 'criteria']
-
-const stepTitles = {
-  basic: 'Informações Básicas',
-  description: 'Descrição da História',
-  criteria: 'Critérios de Aceitação'
-}
 
 export default function NewStoryPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const duplicateId = searchParams.get('duplicate')
+  const { createStory, stories } = useStories()
+  const { features } = useFeatures()
   const [currentStep, setCurrentStep] = useState<Step>('basic')
-  const [formData, setFormData] = useState<StoryForm>({
+  const [formData, setFormData] = useState<Partial<IUserStory>>({
     title: '',
     description: {
       asA: '',
       iWant: '',
       soThat: ''
     },
-    acceptance_criteria: [''],
+    points: 1,
     status: 'open',
-    points: 0,
-    feature_id: '',
-    assignees: []
+    feature_id: ''
   })
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false)
 
-  const { createStory } = useStories()
+  // Carregar dados se for duplicação
+  useEffect(() => {
+    if (duplicateId) {
+      const storyToDuplicate = stories.find(s => s.id === duplicateId)
+      if (storyToDuplicate) {
+        setFormData({
+          ...storyToDuplicate,
+          title: `${storyToDuplicate.title} (Cópia)`,
+          status: 'open'
+        })
+      }
+    }
+  }, [duplicateId, stories])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // Só criar a história se estiver no último passo
+    if (currentStep !== 'criteria') {
+      handleNext()
+      return
+    }
+
     try {
-      if (!formData.title.trim()) {
+      // Validações
+      if (!formData.title?.trim()) {
         toast.error('Título é obrigatório')
         return
       }
 
-      if (!formData.description.asA.trim() || !formData.description.iWant.trim() || !formData.description.soThat.trim()) {
-        toast.error('Todos os campos da descrição são obrigatórios')
+      if (!formData.feature_id) {
+        toast.error('Feature é obrigatória')
         return
       }
 
-      await createStory.mutateAsync({
-        ...formData,
-        acceptance_criteria: formData.acceptance_criteria.filter(criteria => criteria.trim()),
-        owner_id: null // será preenchido pelo backend
-      })
+      // Log dos dados antes de enviar
+      console.log('Dados do formulário:', formData)
 
+      // Garantir que os campos opcionais existam
+      const storyData: Partial<IUserStory> = {
+        ...formData,
+        description: {
+          asA: formData.description?.asA || '',
+          iWant: formData.description?.iWant || '',
+          soThat: formData.description?.soThat || ''
+        },
+        points: formData.points || 1,
+        status: formData.status || 'open',
+        acceptance_criteria: formData.acceptance_criteria || []
+      }
+
+      const newStory = await createStory.mutateAsync(storyData)
+      console.log('História criada:', newStory)
+      
       toast.success('História criada com sucesso')
       router.push('/stories')
     } catch (error) {
-      console.error('Erro ao criar história:', error)
-      toast.error('Erro ao criar história')
+      const message = error instanceof Error ? error.message : 'Erro desconhecido ao criar história'
+      console.error('Erro completo ao criar história:', error)
+      toast.error(`Erro ao criar história: ${message}`)
     }
   }
 
   const handleNext = () => {
-    let canProceed = true
-    const errors: string[] = []
-
-    switch (currentStep) {
-      case 'basic':
-        if (!formData.title.trim()) {
-          errors.push('Título é obrigatório')
-          canProceed = false
-        }
-        if (!formData.points) {
-          errors.push('Story points são obrigatórios')
-          canProceed = false
-        }
-        break
-
-      case 'description':
-        if (!formData.description.asA.trim()) {
-          errors.push('Campo "Como..." é obrigatório')
-          canProceed = false
-        }
-        if (!formData.description.iWant.trim()) {
-          errors.push('Campo "Eu quero..." é obrigatório')
-          canProceed = false
-        }
-        if (!formData.description.soThat.trim()) {
-          errors.push('Campo "Para que..." é obrigatório')
-          canProceed = false
-        }
-        break
-    }
-
-    if (!canProceed) {
-      errors.forEach(error => toast.error(error))
-      return
+    // Validar campos obrigatórios no primeiro passo
+    if (currentStep === 'basic') {
+      if (!formData.title?.trim()) {
+        toast.error('Título é obrigatório')
+        return
+      }
+      if (!formData.feature_id) {
+        toast.error('Feature é obrigatória')
+        return
+      }
     }
 
     const currentIndex = steps.indexOf(currentStep)
@@ -139,29 +132,6 @@ export default function NewStoryPage() {
     }
   }
 
-  const addCriteria = () => {
-    setFormData(prev => ({
-      ...prev,
-      acceptance_criteria: [...prev.acceptance_criteria, '']
-    }))
-  }
-
-  const updateCriteria = (index: number, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      acceptance_criteria: prev.acceptance_criteria.map((item, i) => 
-        i === index ? value : item
-      )
-    }))
-  }
-
-  const removeCriteria = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      acceptance_criteria: prev.acceptance_criteria.filter((_, i) => i !== index)
-    }))
-  }
-
   const renderCurrentStep = () => {
     switch (currentStep) {
       case 'basic':
@@ -173,51 +143,45 @@ export default function NewStoryPage() {
                 value={formData.title}
                 onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="Título da história"
-                required
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Status</label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value: 'open' | 'in-progress' | 'completed' | 'blocked') => 
-                    setFormData(prev => ({ ...prev, status: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="open">Aberta</SelectItem>
-                    <SelectItem value="in-progress">Em Progresso</SelectItem>
-                    <SelectItem value="completed">Concluída</SelectItem>
-                    <SelectItem value="blocked">Bloqueada</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Feature</label>
+              <Select
+                value={formData.feature_id}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, feature_id: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a feature" />
+                </SelectTrigger>
+                <SelectContent>
+                  {features.map(feature => (
+                    <SelectItem key={feature.id} value={feature.id}>
+                      {feature.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Story Points</label>
-                <Select
-                  value={formData.points.toString()}
-                  onValueChange={(value) => 
-                    setFormData(prev => ({ ...prev, points: parseInt(value) }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione os pontos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[1, 2, 3, 5, 8, 13].map(points => (
-                      <SelectItem key={points} value={points.toString()}>
-                        {points} {points === 1 ? 'ponto' : 'pontos'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Story Points</label>
+              <Select
+                value={formData.points.toString()}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, points: parseInt(value) }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione os pontos" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3, 5, 8, 13].map(points => (
+                    <SelectItem key={points} value={points.toString()}>
+                      {points} {points === 1 ? 'ponto' : 'pontos'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         )
@@ -276,24 +240,40 @@ export default function NewStoryPage() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={addCriteria}
+                  onClick={() => setFormData(prev => ({
+                    ...prev,
+                    acceptance_criteria: [...(prev.acceptance_criteria || []), '']
+                  }))}
                 >
                   Adicionar Critério
                 </Button>
               </div>
               <div className="space-y-3">
-                {formData.acceptance_criteria.map((criteria, index) => (
+                {formData.acceptance_criteria?.map((criteria, index) => (
                   <div key={index} className="flex gap-2">
                     <Input
                       value={criteria}
-                      onChange={(e) => updateCriteria(index, e.target.value)}
+                      onChange={(e) => {
+                        const newCriteria = [...(formData.acceptance_criteria || [])]
+                        newCriteria[index] = e.target.value
+                        setFormData(prev => ({
+                          ...prev,
+                          acceptance_criteria: newCriteria
+                        }))
+                      }}
                       placeholder="Descreva um critério de aceitação..."
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => removeCriteria(index)}
+                      onClick={() => {
+                        const newCriteria = formData.acceptance_criteria?.filter((_, i) => i !== index)
+                        setFormData(prev => ({
+                          ...prev,
+                          acceptance_criteria: newCriteria
+                        }))
+                      }}
                       className="shrink-0"
                     >
                       ×
@@ -309,25 +289,34 @@ export default function NewStoryPage() {
 
   return (
     <div className="h-full flex flex-col -m-6">
-      {/* Header */}
-      <div className="bg-[var(--color-background-primary)]">
-        <div className="h-14 px-4 flex items-center gap-4 border-b border-[var(--color-border)]">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={() => router.push('/stories')}
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <div>
+      {/* Cabeçalho */}
+      <div className="bg-[var(--color-background-primary)] border-b border-[var(--color-border)]">
+        <div className="h-14 px-4 flex items-center justify-between">
+          {/* Lado Esquerdo */}
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => router.push('/stories')}
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
             <h1 className="text-sm font-medium text-[var(--color-text-primary)]">
               Nova História
             </h1>
-            <p className="text-xs text-[var(--color-text-secondary)]">
-              {stepTitles[currentStep]}
-            </p>
           </div>
+
+          {/* Lado Direito - Botão de Template */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowTemplateDialog(true)}
+            className="h-8"
+          >
+            <Files className="w-3.5 h-3.5 mr-2" />
+            Usar Template
+          </Button>
         </div>
       </div>
 
@@ -350,28 +339,35 @@ export default function NewStoryPage() {
                 </Button>
               )}
               
-              {currentStep !== 'criteria' ? (
-                <Button
-                  type="button"
-                  onClick={handleNext}
-                  className="ml-auto bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)]"
-                >
-                  Próximo
-                  <ChevronRight className="w-4 h-4 ml-2" />
-                </Button>
-              ) : (
-                <Button
-                  type="submit"
-                  disabled={createStory.isPending}
-                  className="ml-auto bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)]"
-                >
-                  Criar História
-                </Button>
-              )}
+              <Button
+                type="submit"
+                className="ml-auto bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)]"
+                disabled={currentStep === 'criteria' && createStory.isPending}
+              >
+                {currentStep === 'criteria' ? 'Criar História' : 'Próximo'}
+                {currentStep !== 'criteria' && <ChevronRight className="w-4 h-4 ml-2" />}
+              </Button>
             </div>
           </form>
         </div>
       </div>
+
+      {/* Dialog de Template */}
+      <StoryTemplateSelect
+        open={showTemplateDialog}
+        onOpenChange={setShowTemplateDialog}
+        onSelect={(template) => {
+          setFormData(prev => ({
+            ...prev,
+            title: template.title,
+            description: template.description,
+            points: template.defaultPoints,
+            status: template.defaultStatus,
+            acceptance_criteria: template.suggestedCriteria
+          }))
+          toast.success('Template aplicado com sucesso')
+        }}
+      />
     </div>
   )
 } 
