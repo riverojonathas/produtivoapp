@@ -30,7 +30,7 @@ import { toast } from 'sonner'
 import { use } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ProductTagsDialog } from '@/components/products/product-tags-dialog'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface ProductPageProps {
@@ -45,6 +45,13 @@ export default function ProductPage({ params }: ProductPageProps) {
   const [showMetricsDialog, setShowMetricsDialog] = useState(false)
   const [showTagsDialog, setShowTagsDialog] = useState(false)
 
+  useEffect(() => {
+    if (!isLoading && !product) {
+      toast.error('Produto não encontrado')
+      router.push('/products')
+    }
+  }, [isLoading, product, router])
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -54,8 +61,6 @@ export default function ProductPage({ params }: ProductPageProps) {
   }
 
   if (!product) {
-    toast.error('Produto não encontrado')
-    router.push('/products')
     return null
   }
 
