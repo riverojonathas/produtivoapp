@@ -27,7 +27,7 @@ const PRIORITY_LABELS = {
 } as const
 
 export default function AlertsPage() {
-  const { notifications, isLoading, markAsRead, markAllAsRead } = useNotifications()
+  const { notifications, markAsRead, markAllAsRead } = useNotifications()
   const [searchTerm, setSearchTerm] = useState('')
 
   const getAlertIcon = (type: string) => {

@@ -43,7 +43,7 @@ interface FeaturePageProps {
   params: Promise<{ id: string }>
 }
 
-function ProductAvatar({ name, avatarUrl }: { name: string, avatarUrl?: string }) {
+function ProductAvatar({ name }: { name: string }) {
   return (
     <Avatar className="w-6 h-6 rounded-lg border border-[var(--color-border)]">
       <AvatarFallback>
@@ -588,7 +588,6 @@ export default function FeaturePage({ params }: FeaturePageProps) {
                           <div className="flex items-center gap-3">
                             <ProductAvatar 
                               name={product.name}
-                              avatarUrl={product.avatar_url}
                             />
                             <span className="text-sm">{product.name}</span>
                           </div>
