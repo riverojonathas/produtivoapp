@@ -7,13 +7,18 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true
   },
-  staticPageGenerationTimeout: 1000,
   experimental: {
-    workerThreads: false,
-    cpus: 1
+    forceSwcTransforms: true,
+    serverActions: true
   },
-  skipTrailingSlashRedirect: true,
-  skipMiddlewareUrlNormalize: true
+  staticPageGenerationTimeout: 180,
+  pageExtensions: ['ts', 'tsx', 'js', 'jsx'],
+  distDir: '.next',
+  generateEtags: false,
+  poweredByHeader: false,
+  compiler: {
+    removeConsole: false
+  }
 }
 
 module.exports = nextConfig
