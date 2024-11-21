@@ -29,39 +29,44 @@ import { ptBR } from 'date-fns/locale'
 import { ProductActionsMenu } from '@/components/products/product-actions-menu'
 import { useRouter } from 'next/navigation'
 import { Badge } from "@/components/ui/badge"
-import { ProductFilters } from '@/components/products/product-filters'
+import { ProductFilters, ProductFilters as ProductFiltersType } from '@/components/products/product-filters'
 import { ProductKanban } from '@/components/products/product-kanban'
 import { ProductAvatar } from '@/components/products/product-avatar'
 import { Checkbox } from "@/components/ui/checkbox"
 import { ProductExportDialog } from '@/components/products/product-export-dialog'
 import { ProductStatusBadge } from '@/components/products/product-status-badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { toast } from 'sonner'
+import { IProduct, toProduct } from '@/types/product'
 
-interface Product {
-  id: string
-  name: string
-  description: string
-  status: string
-  team?: string[]
-  created_at: string
-  owner_id: string
-  avatar_url?: string | null
-  vision?: string | null
-  target_audience?: string | null
-  risks_count?: number
-  metrics_count?: number
-  priority?: string
-  progress?: number
-}
-
+// Definir o tipo ViewMode
 type ViewMode = 'grid' | 'list' | 'kanban'
 
+// Definir interface para o evento de clique
+interface CardClickEvent extends React.MouseEvent<HTMLDivElement> {
+  target: HTMLElement
+}
+
+// Renomear interface local para evitar conflito
+interface ProductPageFilters {
+  status: string[]
+  dateRange: string
+  hasVision: boolean | null
+  hasTeam: boolean | null
+  hasRisks: boolean | null
+  hasMetrics: boolean | null
+}
+
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  onClick?: (e: CardClickEvent) => void
+}
+
 export default function ProductsPage() {
-  const { products = [], isLoading } = useProducts()
+  const { products = [], isLoading, deleteProduct, updateProduct } = useProducts()
   const [searchTerm, setSearchTerm] = useState('')
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const router = useRouter()
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<ProductPageFilters>({
     status: [],
     dateRange: 'all',
     hasVision: null,
@@ -190,14 +195,25 @@ export default function ProductsPage() {
     }
   }
 
-  const renderGridView = (product: Product) => (
+  const handleCardClick = (e: CardClickEvent, product: IProduct) => {
+    if (isSelectionMode) {
+      handleSelectProduct(product.id)
+    } else {
+      // Não navegar se clicar no menu de ações
+      if (!(e.target as HTMLElement).closest('.product-actions-menu')) {
+        router.push(`/products/${product.id}`)
+      }
+    }
+  }
+
+  const renderGridView = (product: IProduct) => (
     <Card 
       key={product.id} 
       className={cn(
         "group bg-[var(--color-background-primary)] hover:bg-[var(--color-background-subtle)] transition-all duration-200",
         isSelectionMode && "cursor-pointer"
       )}
-      onClick={(e) => {
+      onClick={(e: React.MouseEvent<HTMLDivElement>) => {
         if (isSelectionMode) {
           handleSelectProduct(product.id)
         } else {
@@ -207,6 +223,8 @@ export default function ProductsPage() {
           }
         }
       }}
+      role="button"
+      tabIndex={0}
     >
       <div className="p-4">
         <div className="flex items-start gap-3">
@@ -267,12 +285,20 @@ export default function ProductsPage() {
                 </Badge>
               )}
               {product.priority && (
-                <ProductStatusBadge status={product.priority} />
+                <Badge variant="secondary" className={cn(
+                  "text-xs",
+                  product.priority === 'high' && "bg-red-100 text-red-700",
+                  product.priority === 'medium' && "bg-yellow-100 text-yellow-700",
+                  product.priority === 'low' && "bg-green-100 text-green-700",
+                  product.priority === 'urgent' && "bg-purple-100 text-purple-700"
+                )}>
+                  {product.priority}
+                </Badge>
               )}
             </div>
 
             {/* Indicador de Progresso */}
-            {product.progress && (
+            {typeof product.progress === 'number' && (
               <div className="mt-3">
                 <div className="flex items-center justify-between text-xs mb-1">
                   <span className="text-[var(--color-text-secondary)]">Progresso</span>
@@ -308,14 +334,20 @@ export default function ProductsPage() {
     </Card>
   )
 
-  const renderListView = (product: Product) => (
+  const renderListView = (product: IProduct) => (
     <Card 
       key={product.id} 
       className={cn(
         "group bg-[var(--color-background-primary)] hover:bg-[var(--color-background-subtle)] transition-all duration-200",
         isSelectionMode && "cursor-pointer"
       )}
-      onClick={() => isSelectionMode && handleSelectProduct(product.id)}
+      onClick={(e: React.MouseEvent<HTMLDivElement>) => {
+        if (isSelectionMode) {
+          handleSelectProduct(product.id)
+        }
+      }}
+      role="button"
+      tabIndex={0}
     >
       <div className="p-4 flex items-center gap-4">
         {isSelectionMode && (
@@ -549,7 +581,19 @@ export default function ProductsPage() {
                 </div>
 
                 {/* Filtros */}
-                <ProductFilters onFiltersChange={setFilters} />
+                <ProductFilters 
+                  onFiltersChange={(newFilters: ProductFiltersType) => {
+                    setFilters(prev => ({
+                      ...prev,
+                      status: newFilters.status || [],
+                      dateRange: newFilters.dateRange,
+                      hasVision: newFilters.hasVision ?? null,
+                      hasTeam: newFilters.hasTeam ?? null,
+                      hasRisks: newFilters.hasRisks ?? null,
+                      hasMetrics: newFilters.hasMetrics ?? null
+                    }))
+                  }} 
+                />
 
                 {/* Visualizações */}
                 <div className="flex items-center gap-1 border-l border-[var(--color-border)] pl-3">
@@ -651,7 +695,7 @@ export default function ProductsPage() {
       </div>
 
       <ProductExportDialog
-        products={filteredProducts.filter(p => selectedProducts.has(p.id))}
+        products={filteredProducts.filter(p => selectedProducts.has(p.id)).map(toProduct)}
         open={showExportDialog}
         onOpenChange={(open) => {
           setShowExportDialog(open)

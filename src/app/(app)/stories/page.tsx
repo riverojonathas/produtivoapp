@@ -65,8 +65,18 @@ import {
 import { StoryFilters } from '@/components/stories/story-filters'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { StoryMetrics } from '@/components/stories/story-metrics'
+import { IFeature } from '@/types/feature'
 
 type ViewMode = 'grid' | 'list' | 'table' | 'kanban' | 'grouped'
+
+// Interface para os filtros
+interface StoryFilters {
+  status: string[]
+  points: number[]
+  dateRange: string
+  features: string[]
+  hasAcceptanceCriteria: boolean | null
+}
 
 export default function StoriesPage() {
   const router = useRouter()
@@ -75,7 +85,7 @@ export default function StoriesPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null)
   const { features = [] } = useFeatures()
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<StoryFilters>({
     status: [],
     points: [],
     dateRange: 'all',
@@ -151,7 +161,7 @@ export default function StoriesPage() {
 
     // Filtro de critérios de aceitação
     if (filters.hasAcceptanceCriteria !== null) {
-      const hasCriteria = (story.acceptance_criteria?.length || 0) > 0
+      const hasCriteria = (story.acceptanceCriteria?.length || 0) > 0
       if (hasCriteria !== filters.hasAcceptanceCriteria) return false
     }
 
@@ -321,23 +331,23 @@ export default function StoriesPage() {
         </div>
 
         {/* Critérios de Aceitação */}
-        {story.acceptance_criteria && story.acceptance_criteria.length > 0 && (
+        {story.acceptanceCriteria && story.acceptanceCriteria.length > 0 && (
           <div className="pt-3 border-t border-[var(--color-border)]">
             <div className="flex items-center gap-2 mb-2">
               <ListChecks className="w-3.5 h-3.5 text-[var(--color-text-secondary)]" />
               <span className="text-xs text-[var(--color-text-secondary)]">
-                {story.acceptance_criteria.length} critérios
+                {story.acceptanceCriteria.length} critérios
               </span>
             </div>
             <div className="space-y-1">
-              {story.acceptance_criteria.slice(0, 2).map((criteria, index) => (
+              {story.acceptanceCriteria.slice(0, 2).map((criteria: string, index: number) => (
                 <p key={index} className="text-xs text-[var(--color-text-secondary)] truncate">
                   • {criteria}
                 </p>
               ))}
-              {story.acceptance_criteria.length > 2 && (
+              {story.acceptanceCriteria.length > 2 && (
                 <p className="text-xs text-[var(--color-text-secondary)]">
-                  +{story.acceptance_criteria.length - 2} critérios
+                  +{story.acceptanceCriteria.length - 2} critérios
                 </p>
               )}
             </div>
@@ -722,7 +732,12 @@ export default function StoriesPage() {
             </div>
 
             <StoryFilters 
-              onFiltersChange={setFilters}
+              onFiltersChange={(newFilters: StoryFilters) => {
+                setFilters(prev => ({
+                  ...prev,
+                  ...newFilters
+                }))
+              }}
               features={features}
             />
 

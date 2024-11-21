@@ -2,13 +2,15 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Feature } from "@/types/product"
+import { IFeature } from "@/types/feature"
 import { useState } from "react"
 import { useFeatures } from "@/hooks/use-features"
 import { toast } from "sonner"
 
+type MoscowPriority = 'must' | 'should' | 'could' | 'wont'
+
 interface BulkPrioritizationDialogProps {
-  features: Feature[]
+  features: IFeature[]
   open: boolean
   onOpenChange: (open: boolean) => void
 }
@@ -21,7 +23,7 @@ export function BulkPrioritizationDialog({
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([])
   const { updateFeature } = useFeatures()
 
-  const handleBulkUpdate = async (priority: string) => {
+  const handleBulkUpdate = async (priority: MoscowPriority) => {
     try {
       await Promise.all(
         selectedFeatures.map(id => 
@@ -44,7 +46,34 @@ export function BulkPrioritizationDialog({
         <DialogHeader>
           <DialogTitle>Priorização em Lote</DialogTitle>
         </DialogHeader>
-        {/* ... implementação do conteúdo ... */}
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => handleBulkUpdate('must')}
+            >
+              Must Have
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => handleBulkUpdate('should')}
+            >
+              Should Have
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => handleBulkUpdate('could')}
+            >
+              Could Have
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => handleBulkUpdate('wont')}
+            >
+              Won't Have
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   )

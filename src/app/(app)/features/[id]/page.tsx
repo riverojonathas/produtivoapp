@@ -19,7 +19,6 @@ import {
   Clock,
   GitBranch,
   X,
-  ProductAvatar
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -29,14 +28,29 @@ import { UserStoriesDialog } from '@/components/features/user-stories-dialog'
 import { useState } from 'react'
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { IFeature, IUserStory } from '@/types/feature'
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { 
+  IFeature, 
+  IUserStory, 
+  FeaturePriority, 
+  IFeatureDependency 
+} from '@/types/feature'
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { AddDependencyDialog } from '@/components/features/add-dependency-dialog'
 import { FeatureStatusSelect } from '@/components/features/feature-status-select'
 import { FeaturePrioritySelect } from '@/components/features/feature-priority-select'
 
 interface FeaturePageProps {
   params: Promise<{ id: string }>
+}
+
+function ProductAvatar({ name, avatarUrl }: { name: string, avatarUrl?: string }) {
+  return (
+    <Avatar className="w-6 h-6 rounded-lg border border-[var(--color-border)]">
+      <AvatarFallback>
+        {name.substring(0, 2).toUpperCase()}
+      </AvatarFallback>
+    </Avatar>
+  )
 }
 
 export default function FeaturePage({ params }: FeaturePageProps) {
@@ -92,7 +106,7 @@ export default function FeaturePage({ params }: FeaturePageProps) {
     {
       icon: ListChecks,
       label: 'Histórias',
-      value: feature.stories?.length || 0,
+      value: feature.user_stories?.length || 0,
       color: 'text-blue-500',
       bgColor: 'bg-blue-500/8 dark:bg-blue-500/10'
     },
@@ -144,6 +158,145 @@ export default function FeaturePage({ params }: FeaturePageProps) {
     }
   }
 
+  const renderPrioritySelect = (priority?: FeaturePriority) => {
+    if (!priority) return null
+
+    return (
+      <FeaturePrioritySelect
+        priority={priority}
+        onPriorityChange={async (newPriority) => {
+          await updateFeature.mutateAsync({
+            id: feature.id,
+            data: { priority: newPriority }
+          })
+          toast.success('Prioridade atualizada com sucesso')
+        }}
+        size="sm"
+      />
+    )
+  }
+
+  const renderUserStories = () => {
+    if (!feature.user_stories?.length) {
+      return (
+        <p className="text-sm text-[var(--color-text-secondary)]">
+          Nenhuma história cadastrada
+        </p>
+      )
+    }
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-base font-medium">Histórias de Usuário</h3>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+            {feature.user_stories.length} {feature.user_stories.length === 1 ? 'história' : 'histórias'}
+          </p>
+        </div>
+        {groupStoriesByStatus(feature.user_stories).map(([status, stories]) => (
+          <div key={status} className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className={cn(
+                "text-xs",
+                status === 'done' && "bg-emerald-100 text-emerald-700",
+                status === 'doing' && "bg-blue-100 text-blue-700",
+                status === 'blocked' && "bg-red-100 text-red-700",
+                status === 'backlog' && "bg-gray-100 text-gray-700"
+              )}>
+                {status}
+              </Badge>
+              <span className="text-xs text-[var(--color-text-secondary)]">
+                {stories.length} {stories.length === 1 ? 'história' : 'histórias'}
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              {stories.map((story) => (
+                <div
+                  key={story.id}
+                  className="p-3 bg-[var(--color-background-subtle)] rounded-lg hover:bg-[var(--color-background-elevated)] transition-colors"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">
+                        {story.points} pontos
+                      </Badge>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => setShowStoriesDialog(true)}
+                    >
+                      <Edit className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  <p className="text-sm">{story.title}</p>
+                  {story.description && (
+                    <div className="mt-2 text-xs text-[var(--color-text-secondary)]">
+                      <p>Como {story.description.asA},</p>
+                      <p>Eu quero {story.description.iWant},</p>
+                      <p>Para que {story.description.soThat}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  // Função helper para renderizar dependências
+  const renderDependencies = (dependencies?: IFeatureDependency[]) => {
+    if (!dependencies?.length) {
+      return (
+        <p className="text-sm text-[var(--color-text-secondary)]">
+          Nenhuma dependência definida
+        </p>
+      )
+    }
+
+    return (
+      <div className="space-y-2">
+        {dependencies.map(dep => (
+          <div
+            key={dep.id}
+            className="p-3 bg-[var(--color-background-subtle)] rounded-lg hover:bg-[var(--color-background-elevated)] transition-colors cursor-pointer"
+            onClick={() => router.push(`/features/${dep.id}`)}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className={cn(
+                  "text-xs",
+                  dep.status === 'done' && "bg-emerald-100 text-emerald-700",
+                  dep.status === 'doing' && "bg-blue-100 text-blue-700",
+                  dep.status === 'blocked' && "bg-red-100 text-red-700",
+                  dep.status === 'backlog' && "bg-gray-100 text-gray-700"
+                )}>
+                  {dep.status}
+                </Badge>
+                <span className="text-sm">{dep.title}</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  /* Implementar remoção de dependência */
+                }}
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className="h-full flex flex-col -m-6">
       {/* Cabeçalho */}
@@ -178,17 +331,7 @@ export default function FeaturePage({ params }: FeaturePageProps) {
                     }}
                     size="sm"
                   />
-                  <FeaturePrioritySelect
-                    priority={feature.priority}
-                    onPriorityChange={async (newPriority) => {
-                      await updateFeature.mutateAsync({
-                        id: feature.id,
-                        data: { priority: newPriority }
-                      })
-                      toast.success('Prioridade atualizada com sucesso')
-                    }}
-                    size="sm"
-                  />
+                  {feature.priority && renderPrioritySelect(feature.priority)}
                   <span className="text-xs text-[var(--color-text-secondary)]">
                     Criada em {format(new Date(feature.created_at), "dd MMM, yy", { locale: ptBR })}
                   </span>
@@ -327,11 +470,7 @@ export default function FeaturePage({ params }: FeaturePageProps) {
                     <BookOpen className="w-4 h-4 text-[var(--color-primary)]" />
                     Histórias de Usuário
                   </h2>
-                  {feature.stories?.length > 0 && (
-                    <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-                      {feature.stories.length} {feature.stories.length === 1 ? 'história' : 'histórias'}
-                    </p>
-                  )}
+                  {renderUserStories()}
                 </div>
                 <Button
                   variant="outline"
@@ -342,65 +481,7 @@ export default function FeaturePage({ params }: FeaturePageProps) {
                 </Button>
               </div>
 
-              {feature.stories && feature.stories.length > 0 ? (
-                <div className="space-y-6">
-                  {groupStoriesByStatus(feature.stories).map(([status, stories]) => (
-                    <div key={status} className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className={cn(
-                          "text-xs",
-                          status === 'done' && "bg-emerald-100 text-emerald-700",
-                          status === 'doing' && "bg-blue-100 text-blue-700",
-                          status === 'blocked' && "bg-red-100 text-red-700",
-                          status === 'backlog' && "bg-gray-100 text-gray-700"
-                        )}>
-                          {status}
-                        </Badge>
-                        <span className="text-xs text-[var(--color-text-secondary)]">
-                          {stories.length} {stories.length === 1 ? 'história' : 'histórias'}
-                        </span>
-                      </div>
-
-                      <div className="space-y-2">
-                        {stories.map((story) => (
-                          <div
-                            key={story.id}
-                            className="p-3 bg-[var(--color-background-subtle)] rounded-lg hover:bg-[var(--color-background-elevated)] transition-colors"
-                          >
-                            <div className="flex items-center justify-between mb-1">
-                              <div className="flex items-center gap-2">
-                                <Badge variant="secondary" className="text-xs">
-                                  {story.points} pontos
-                                </Badge>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => setShowStoriesDialog(true)}
-                              >
-                                <Edit className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                            <p className="text-sm">{story.title}</p>
-                            {story.description && (
-                              <div className="mt-2 text-xs text-[var(--color-text-secondary)]">
-                                <p>Como {story.description.asA},</p>
-                                <p>Eu quero {story.description.iWant},</p>
-                                <p>Para que {story.description.soThat}</p>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-[var(--color-text-secondary)]">
-                  Nenhuma história cadastrada
-                </p>
-              )}
+              {renderUserStories()}
             </Card>
           </div>
 
@@ -416,17 +497,7 @@ export default function FeaturePage({ params }: FeaturePageProps) {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-3 bg-[var(--color-background-subtle)] rounded-lg">
                   <span className="text-sm">Prioridade</span>
-                  <FeaturePrioritySelect
-                    priority={feature.priority}
-                    onPriorityChange={async (newPriority) => {
-                      await updateFeature.mutateAsync({
-                        id: feature.id,
-                        data: { priority: newPriority }
-                      })
-                      toast.success('Prioridade atualizada com sucesso')
-                    }}
-                    size="sm"
-                  />
+                  {feature.priority && renderPrioritySelect(feature.priority)}
                 </div>
 
                 {feature.start_date && (
@@ -488,47 +559,7 @@ export default function FeaturePage({ params }: FeaturePageProps) {
                     </Button>
                   </div>
                   
-                  {feature.dependencies?.length > 0 ? (
-                    <div className="space-y-2">
-                      {feature.dependencies.map(dep => (
-                        <div
-                          key={dep.id}
-                          className="p-3 bg-[var(--color-background-subtle)] rounded-lg hover:bg-[var(--color-background-elevated)] transition-colors cursor-pointer"
-                          onClick={() => router.push(`/features/${dep.id}`)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary" className={cn(
-                                "text-xs",
-                                dep.status === 'done' && "bg-emerald-100 text-emerald-700",
-                                dep.status === 'doing' && "bg-blue-100 text-blue-700",
-                                dep.status === 'blocked' && "bg-red-100 text-red-700",
-                                dep.status === 'backlog' && "bg-gray-100 text-gray-700"
-                              )}>
-                                {dep.status}
-                              </Badge>
-                              <span className="text-sm">{dep.title}</span>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                /* Implementar remoção de dependência */
-                              }}
-                            >
-                              <X className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-[var(--color-text-secondary)]">
-                      Nenhuma dependência definida
-                    </p>
-                  )}
+                  {renderDependencies(feature.dependencies)}
                 </div>
 
                 {/* Features que Dependem Desta */}
@@ -537,43 +568,16 @@ export default function FeaturePage({ params }: FeaturePageProps) {
                     Features que dependem desta
                   </h3>
                   
-                  {feature.dependent_features?.length > 0 ? (
-                    <div className="space-y-2">
-                      {feature.dependent_features.map(dep => (
-                        <div
-                          key={dep.id}
-                          className="p-3 bg-[var(--color-background-subtle)] rounded-lg hover:bg-[var(--color-background-elevated)] transition-colors cursor-pointer"
-                          onClick={() => router.push(`/features/${dep.id}`)}
-                        >
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className={cn(
-                              "text-xs",
-                              dep.status === 'done' && "bg-emerald-100 text-emerald-700",
-                              dep.status === 'doing' && "bg-blue-100 text-blue-700",
-                              dep.status === 'blocked' && "bg-red-100 text-red-700",
-                              dep.status === 'backlog' && "bg-gray-100 text-gray-700"
-                            )}>
-                              {dep.status}
-                            </Badge>
-                            <span className="text-sm">{dep.title}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-[var(--color-text-secondary)]">
-                      Nenhuma feature depende desta
-                    </p>
-                  )}
+                  {renderDependencies(feature.dependent_features)}
                 </div>
 
-                {/* Relacionamentos com Produtos */}
+                {/* Produtos Relacionados */}
                 <div className="space-y-3">
                   <h3 className="text-sm font-medium text-[var(--color-text-secondary)]">
                     Produtos Relacionados
                   </h3>
                   
-                  {feature.related_products?.length > 0 ? (
+                  {feature.related_products?.length ? (
                     <div className="space-y-2">
                       {feature.related_products.map(product => (
                         <div
@@ -582,12 +586,10 @@ export default function FeaturePage({ params }: FeaturePageProps) {
                           onClick={() => router.push(`/products/${product.id}`)}
                         >
                           <div className="flex items-center gap-3">
-                            <Avatar
-                              className="w-6 h-6 rounded-lg border border-[var(--color-border)]"
-                              src={product.avatar_url}
-                            >
-                              {product.name.substring(0, 2).toUpperCase()}
-                            </Avatar>
+                            <ProductAvatar 
+                              name={product.name}
+                              avatarUrl={product.avatar_url}
+                            />
                             <span className="text-sm">{product.name}</span>
                           </div>
                         </div>

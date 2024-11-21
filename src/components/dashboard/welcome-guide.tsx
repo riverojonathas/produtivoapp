@@ -191,40 +191,60 @@ const steps = [
   }
 ]
 
-export function WelcomeGuide() {
+interface DashboardPreferences {
+  showWelcomeGuide: boolean
+  completedSteps: string[]
+  enabledWidgets: string[]
+}
+
+interface WelcomeGuideProps {
+  completedSteps: string[]
+  onStepComplete: (stepId: string) => Promise<void>
+  onHide: () => Promise<void>
+}
+
+export function WelcomeGuide({ 
+  completedSteps, 
+  onStepComplete, 
+  onHide 
+}: WelcomeGuideProps) {
   const router = useRouter()
   const [selectedStep, setSelectedStep] = useState<string | null>(null)
-  const { preferences, updatePreferences } = useUserPreferences<{
-    showWelcomeGuide: boolean
-    completedSteps: string[]
-    enabledWidgets: string[]
-  }>('dashboard-preferences', {
-    showWelcomeGuide: true,
-    completedSteps: [],
-    enabledWidgets: [
-      'quick-metrics',
-      'recent-activities',
-      'product-insights',
-      'priority-features'
-    ]
-  })
+  const { preferences, updatePreferences, isLoading, error } = useUserPreferences<DashboardPreferences>(
+    'dashboard-preferences',
+    {
+      showWelcomeGuide: true,
+      completedSteps: [],
+      enabledWidgets: [
+        'quick-metrics',
+        'recent-activities',
+        'product-insights',
+        'priority-features'
+      ]
+    }
+  )
 
   const handleHideGuide = async () => {
+    if (!preferences) return
+
     await updatePreferences({
-      ...preferences,
-      showWelcomeGuide: false
+      showWelcomeGuide: false,
+      completedSteps: preferences.completedSteps,
+      enabledWidgets: preferences.enabledWidgets
     })
   }
 
   const handleStepComplete = async (stepId: string) => {
-    const completedSteps = [...(preferences?.completedSteps || []), stepId]
+    if (!preferences) return
+
+    const completedSteps = [...preferences.completedSteps, stepId]
     await updatePreferences({
       ...preferences,
       completedSteps
     })
   }
 
-  if (!preferences?.showWelcomeGuide) {
+  if (isLoading || error || !preferences || !preferences.showWelcomeGuide) {
     return null
   }
 
@@ -250,7 +270,7 @@ export function WelcomeGuide() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={handleHideGuide}
+          onClick={onHide}
           className="h-8 w-8 p-0"
         >
           <X className="w-4 h-4" />
@@ -260,7 +280,7 @@ export function WelcomeGuide() {
       {/* Grid de Passos */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {steps.map((step, index) => {
-          const isCompleted = preferences?.completedSteps?.includes(step.id)
+          const isCompleted = completedSteps?.includes(step.id)
 
           return (
             <div
@@ -424,7 +444,7 @@ export function WelcomeGuide() {
         <Button
           variant="outline"
           size="sm"
-          onClick={handleHideGuide}
+          onClick={onHide}
           className="h-8"
         >
           Ocultar Guia

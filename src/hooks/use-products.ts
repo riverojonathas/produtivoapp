@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { IProduct } from '@/types/product'
+import { IProduct, IProductTag } from '@/types/product'
 
 interface UseProductsReturn {
   products: IProduct[]
@@ -71,7 +71,7 @@ export function useProducts(id?: string): UseProductsReturn {
       setIsPending(true)
       try {
         // Remover campos que não devem ser enviados para o banco
-        const { tags, product_tags, product_metrics, product_risks, ...productData } = data
+        const { tags, product_tags: _, product_metrics, product_risks, ...productData } = data
 
         const { data: newProduct, error } = await supabase
           .from('products')
@@ -113,7 +113,7 @@ export function useProducts(id?: string): UseProductsReturn {
       setIsPending(true)
       try {
         // Remover campos que não devem ser enviados para o banco
-        const { tags, product_tags, product_metrics, product_risks, ...updateData } = data
+        const { tags, product_tags: _, product_metrics, product_risks, ...updateData } = data
 
         const { data: updatedProduct, error } = await supabase
           .from('products')

@@ -2,11 +2,11 @@
 
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Feature } from "@/types/product"
-import { BarChart3, Target } from "lucide-react"
+import { IFeature } from "@/types/feature"
+import { BarChart3 } from "lucide-react"
 
 interface FeatureComparisonProps {
-  features: Feature[]
+  features: IFeature[]
 }
 
 export function FeatureComparison({ features }: FeatureComparisonProps) {
@@ -53,4 +53,4 @@ export function FeatureComparison({ features }: FeatureComparisonProps) {
       </div>
     </Card>
   )
-} 
+}

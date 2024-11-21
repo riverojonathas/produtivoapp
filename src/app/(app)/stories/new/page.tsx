@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,21 +16,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { IUserStory } from '@/types/story'
+import { IUserStory, UserStoryFormData, IUserStoryDescription } from '@/types/story'
 import { StoryTemplateSelect } from '@/components/stories/story-template-select'
 
 type Step = 'basic' | 'description' | 'criteria'
 
 const steps: Step[] = ['basic', 'description', 'criteria']
 
-export default function NewStoryPage() {
+function NewStoryPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const duplicateId = searchParams.get('duplicate')
   const { createStory, stories } = useStories()
   const { features } = useFeatures()
   const [currentStep, setCurrentStep] = useState<Step>('basic')
-  const [formData, setFormData] = useState<Partial<IUserStory>>({
+  const [formData, setFormData] = useState<UserStoryFormData>({
     title: '',
     description: {
       asA: '',
@@ -39,7 +39,8 @@ export default function NewStoryPage() {
     },
     points: 1,
     status: 'open',
-    feature_id: ''
+    feature_id: '',
+    acceptanceCriteria: []
   })
   const [showTemplateDialog, setShowTemplateDialog] = useState(false)
 
@@ -60,12 +61,6 @@ export default function NewStoryPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Só criar a história se estiver no último passo
-    if (currentStep !== 'criteria') {
-      handleNext()
-      return
-    }
-
     try {
       // Validações
       if (!formData.title?.trim()) {
@@ -78,25 +73,21 @@ export default function NewStoryPage() {
         return
       }
 
-      // Log dos dados antes de enviar
-      console.log('Dados do formulário:', formData)
+      // Garantir que todos os campos da descrição estão preenchidos
+      if (!formData.description.asA || !formData.description.iWant || !formData.description.soThat) {
+        toast.error('Todos os campos da descrição são obrigatórios')
+        return
+      }
 
-      // Garantir que os campos opcionais existam
       const storyData: Partial<IUserStory> = {
         ...formData,
-        description: {
-          asA: formData.description?.asA || '',
-          iWant: formData.description?.iWant || '',
-          soThat: formData.description?.soThat || ''
-        },
+        description: formData.description as IUserStoryDescription,
         points: formData.points || 1,
         status: formData.status || 'open',
-        acceptance_criteria: formData.acceptance_criteria || []
+        acceptanceCriteria: formData.acceptanceCriteria || []
       }
 
       const newStory = await createStory.mutateAsync(storyData)
-      console.log('História criada:', newStory)
-      
       toast.success('História criada com sucesso')
       router.push('/stories')
     } catch (error) {
@@ -168,7 +159,7 @@ export default function NewStoryPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Story Points</label>
               <Select
-                value={formData.points.toString()}
+                value={formData.points?.toString() || '1'}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, points: parseInt(value) }))}
               >
                 <SelectTrigger>
@@ -195,7 +186,10 @@ export default function NewStoryPage() {
                 value={formData.description.asA}
                 onChange={(e) => setFormData(prev => ({
                   ...prev,
-                  description: { ...prev.description, asA: e.target.value }
+                  description: {
+                    ...prev.description,
+                    asA: e.target.value
+                  }
                 }))}
                 placeholder="Descreva quem é o usuário desta história..."
                 className="min-h-[100px]"
@@ -208,7 +202,10 @@ export default function NewStoryPage() {
                 value={formData.description.iWant}
                 onChange={(e) => setFormData(prev => ({
                   ...prev,
-                  description: { ...prev.description, iWant: e.target.value }
+                  description: {
+                    ...prev.description,
+                    iWant: e.target.value
+                  }
                 }))}
                 placeholder="Descreva o que o usuário quer fazer..."
                 className="min-h-[100px]"
@@ -221,7 +218,10 @@ export default function NewStoryPage() {
                 value={formData.description.soThat}
                 onChange={(e) => setFormData(prev => ({
                   ...prev,
-                  description: { ...prev.description, soThat: e.target.value }
+                  description: {
+                    ...prev.description,
+                    soThat: e.target.value
+                  }
                 }))}
                 placeholder="Descreva qual o benefício esperado..."
                 className="min-h-[100px]"
@@ -242,23 +242,23 @@ export default function NewStoryPage() {
                   size="sm"
                   onClick={() => setFormData(prev => ({
                     ...prev,
-                    acceptance_criteria: [...(prev.acceptance_criteria || []), '']
+                    acceptanceCriteria: [...(prev.acceptanceCriteria || []), '']
                   }))}
                 >
                   Adicionar Critério
                 </Button>
               </div>
               <div className="space-y-3">
-                {formData.acceptance_criteria?.map((criteria, index) => (
+                {formData.acceptanceCriteria?.map((criteria: string, index: number) => (
                   <div key={index} className="flex gap-2">
                     <Input
                       value={criteria}
                       onChange={(e) => {
-                        const newCriteria = [...(formData.acceptance_criteria || [])]
+                        const newCriteria = [...(formData.acceptanceCriteria || [])]
                         newCriteria[index] = e.target.value
                         setFormData(prev => ({
                           ...prev,
-                          acceptance_criteria: newCriteria
+                          acceptanceCriteria: newCriteria
                         }))
                       }}
                       placeholder="Descreva um critério de aceitação..."
@@ -268,10 +268,10 @@ export default function NewStoryPage() {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        const newCriteria = formData.acceptance_criteria?.filter((_, i) => i !== index)
+                        const newCriteria = formData.acceptanceCriteria?.filter((_: string, i: number) => i !== index)
                         setFormData(prev => ({
                           ...prev,
-                          acceptance_criteria: newCriteria
+                          acceptanceCriteria: newCriteria
                         }))
                       }}
                       className="shrink-0"
@@ -363,11 +363,23 @@ export default function NewStoryPage() {
             description: template.description,
             points: template.defaultPoints,
             status: template.defaultStatus,
-            acceptance_criteria: template.suggestedCriteria
+            acceptanceCriteria: template.suggestedCriteria
           }))
           toast.success('Template aplicado com sucesso')
         }}
       />
     </div>
+  )
+}
+
+export default function NewStoryPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-full">
+        <div className="text-[var(--color-text-secondary)]">Carregando...</div>
+      </div>
+    }>
+      <NewStoryPageContent />
+    </Suspense>
   )
 } 

@@ -1,11 +1,11 @@
 'use client'
 
 import { Card } from "@/components/ui/card"
-import { Feature } from "@/types/product"
+import { IFeature } from "@/types/feature"
 import { DollarSign, TrendingUp, Users } from "lucide-react"
 
 interface BusinessImpactProps {
-  feature: Feature
+  feature: IFeature
 }
 
 export function BusinessImpact({ feature }: BusinessImpactProps) {

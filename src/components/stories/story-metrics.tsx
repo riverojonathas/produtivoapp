@@ -172,7 +172,7 @@ export function StoryMetrics({ stories }: StoryMetricsProps) {
                 Com Critérios
               </span>
               <Badge variant="secondary">
-                {stories.filter(s => s.acceptance_criteria?.length).length} histórias
+                {stories.filter(s => s.acceptanceCriteria?.length).length} histórias
               </Badge>
             </div>
             <div className="flex items-center justify-between">
@@ -180,7 +180,7 @@ export function StoryMetrics({ stories }: StoryMetricsProps) {
                 Sem Critérios
               </span>
               <Badge variant="secondary">
-                {stories.filter(s => !s.acceptance_criteria?.length).length} histórias
+                {stories.filter(s => !s.acceptanceCriteria?.length).length} histórias
               </Badge>
             </div>
           </div>

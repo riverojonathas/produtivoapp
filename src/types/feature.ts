@@ -5,52 +5,76 @@ import {
   CheckCircle2
 } from 'lucide-react'
 
-export interface IFeature {
+// Tipos base
+export type FeatureStatus = 'backlog' | 'doing' | 'done' | 'blocked'
+export type FeaturePriority = 'low' | 'medium' | 'high' | 'urgent'
+export type MoscowPriority = 'must' | 'should' | 'could' | 'wont'
+
+// Interfaces
+export interface IFeatureDescription {
+  what?: string
+  why?: string
+  who?: string
+  metrics?: string
+  notes?: string
+}
+
+export interface IFeatureDependency {
+  id: string
+  title: string
+  status: FeatureStatus
+}
+
+export interface IRelatedProduct {
+  id: string
+  name: string
+  avatar_url?: string
+}
+
+export interface IUserStory {
   id: string
   title: string
   description: {
-    what?: string
-    why?: string
-    how?: string
-    who?: string
+    asA: string
+    iWant: string
+    soThat: string
   }
-  status: FeatureStatus
-  priority: 'low' | 'medium' | 'high' | 'urgent'
-  product_id: string
-  owner_id: string
+  points: number
+  status: 'open' | 'in-progress' | 'completed' | 'blocked'
+  feature_id: string
   created_at: string
   updated_at: string
-  start_date?: string
-  end_date?: string
-  dependencies?: {
-    id: string
-    title: string
-    status: FeatureStatus
-  }[]
+  acceptanceCriteria?: string[]
   assignees?: string[]
-  tags?: string[]
-  progress?: number
-  rice_reach?: number
-  rice_impact?: number
-  rice_confidence?: number
-  rice_effort?: number
-  rice_score?: number
-  moscow_priority?: 'must' | 'should' | 'could' | 'wont'
-  dependent_features?: {
-    id: string
-    title: string
-    status: FeatureStatus
-  }[]
-  related_products?: {
-    id: string
-    name: string
-    avatar_url?: string | null
-  }[]
-  stories?: IUserStory[]
 }
 
-export type FeatureStatus = 'backlog' | 'doing' | 'done' | 'blocked'
+// Interface principal da Feature
+export interface IFeature {
+  id: string
+  title: string
+  description?: IFeatureDescription
+  status: FeatureStatus
+  priority?: FeaturePriority
+  created_at: string
+  updated_at?: string
+  product_id?: string
+  start_date?: string
+  end_date?: string
+  progress?: number
+  rice_score?: number
+  moscow_priority?: MoscowPriority
+  rice_impact?: number
+  rice_effort?: number
+  rice_reach?: number
+  rice_confidence?: number
+  user_stories?: IUserStory[]
+  assignees?: string[]
+  dependencies?: IFeatureDependency[]
+  dependent_features?: IFeatureDependency[]
+  related_products?: IRelatedProduct[]
+}
 
+// Constantes
 export const FEATURE_STATUS = {
   backlog: {
     label: 'Backlog',
@@ -78,8 +102,6 @@ export const FEATURE_STATUS = {
   }
 } as const
 
-export type FeaturePriority = 'low' | 'medium' | 'high' | 'urgent'
-
 export const FEATURE_PRIORITY = {
   low: {
     label: 'Baixa',
@@ -103,17 +125,5 @@ export const FEATURE_PRIORITY = {
   }
 } as const
 
-export interface IUserStory {
-  id: string
-  title: string
-  description: {
-    asA: string
-    iWant: string
-    soThat: string
-  }
-  points: number
-  status: 'open' | 'in-progress' | 'completed' | 'blocked'
-  feature_id: string
-  created_at: string
-  updated_at: string
-} 
+// Remover a interface Feature antiga e usar apenas IFeature
+export type Feature = IFeature 

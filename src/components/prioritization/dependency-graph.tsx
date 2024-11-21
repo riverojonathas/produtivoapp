@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { Feature } from "@/types/product"
+import { IFeature } from "@/types/feature"
 import * as d3 from 'd3'
 
 interface DependencyGraphProps {
-  features: Feature[]
+  features: IFeature[]
 }
 
 export function DependencyGraph({ features }: DependencyGraphProps) {

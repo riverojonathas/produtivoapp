@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,7 +9,7 @@ import { ArrowLeft } from 'lucide-react'
 import { useStoryTemplates } from '@/hooks/use-story-templates'
 import { toast } from 'sonner'
 import { IStoryTemplate } from '@/types/story-template'
-import { STORY_STATUS } from '@/types/story'
+import { STORY_STATUS, StoryStatus } from '@/types/story'
 import {
   Select,
   SelectContent,
@@ -18,12 +18,26 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-export default function NewTemplateStoryPage() {
+type StoryTemplateFormData = {
+  title: string
+  description: {
+    asA: string
+    iWant: string
+    soThat: string
+  }
+  defaultPoints: number
+  defaultStatus: StoryStatus
+  suggestedCriteria: string[]
+  category: string
+}
+
+// Componente interno que usa useSearchParams
+function NewTemplateStoryContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const duplicateId = searchParams.get('duplicate')
   const { templates = [], createTemplate } = useStoryTemplates()
-  const [formData, setFormData] = useState<Partial<IStoryTemplate>>({
+  const [formData, setFormData] = useState<StoryTemplateFormData>({
     title: '',
     description: {
       asA: '',
@@ -42,8 +56,12 @@ export default function NewTemplateStoryPage() {
       const templateToDuplicate = templates.find(t => t.id === duplicateId)
       if (templateToDuplicate) {
         setFormData({
-          ...templateToDuplicate,
-          title: `${templateToDuplicate.title} (Cópia)`
+          title: `${templateToDuplicate.title} (Cópia)`,
+          description: templateToDuplicate.description,
+          defaultPoints: templateToDuplicate.defaultPoints || 1,
+          defaultStatus: templateToDuplicate.defaultStatus || 'open',
+          suggestedCriteria: templateToDuplicate.suggestedCriteria || [],
+          category: templateToDuplicate.category || ''
         })
       }
     }
@@ -58,7 +76,17 @@ export default function NewTemplateStoryPage() {
         return
       }
 
-      await createTemplate.mutateAsync(formData)
+      // Converter para o formato esperado pela API
+      const templateData: Partial<IStoryTemplate> = {
+        title: formData.title,
+        description: formData.description,
+        defaultPoints: formData.defaultPoints,
+        defaultStatus: formData.defaultStatus as StoryStatus,
+        suggestedCriteria: formData.suggestedCriteria,
+        category: formData.category
+      }
+
+      await createTemplate.mutateAsync(templateData)
       toast.success('Template criado com sucesso')
       router.push('/stories/templates')
     } catch (error) {
@@ -161,7 +189,10 @@ export default function NewTemplateStoryPage() {
                   value={formData.description?.asA}
                   onChange={(e) => setFormData(prev => ({
                     ...prev,
-                    description: { ...prev.description, asA: e.target.value }
+                    description: {
+                      ...prev.description,
+                      asA: e.target.value
+                    }
                   }))}
                   placeholder="Descreva quem é o usuário desta história..."
                   className="min-h-[100px]"
@@ -174,7 +205,10 @@ export default function NewTemplateStoryPage() {
                   value={formData.description?.iWant}
                   onChange={(e) => setFormData(prev => ({
                     ...prev,
-                    description: { ...prev.description, iWant: e.target.value }
+                    description: {
+                      ...prev.description,
+                      iWant: e.target.value
+                    }
                   }))}
                   placeholder="Descreva o que o usuário quer fazer..."
                   className="min-h-[100px]"
@@ -187,7 +221,10 @@ export default function NewTemplateStoryPage() {
                   value={formData.description?.soThat}
                   onChange={(e) => setFormData(prev => ({
                     ...prev,
-                    description: { ...prev.description, soThat: e.target.value }
+                    description: {
+                      ...prev.description,
+                      soThat: e.target.value
+                    }
                   }))}
                   placeholder="Descreva qual o benefício esperado..."
                   className="min-h-[100px]"
@@ -267,5 +304,18 @@ export default function NewTemplateStoryPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+// Componente principal com Suspense
+export default function NewTemplateStoryPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-full">
+        <div className="text-[var(--color-text-secondary)]">Carregando...</div>
+      </div>
+    }>
+      <NewTemplateStoryContent />
+    </Suspense>
   )
 } 

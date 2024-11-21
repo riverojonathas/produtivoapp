@@ -70,7 +70,7 @@ export default function StoryPage({ params }: StoryPageProps) {
     {
       icon: Target,
       label: 'Critérios de Aceitação',
-      value: story.acceptance_criteria?.length || 0,
+      value: story.acceptanceCriteria?.length || 0,
       color: 'text-blue-500',
       bgColor: 'bg-blue-500/8 dark:bg-blue-500/10'
     }
@@ -223,7 +223,7 @@ export default function StoryPage({ params }: StoryPageProps) {
             </Card>
 
             {/* Critérios de Aceitação */}
-            {story.acceptance_criteria && story.acceptance_criteria.length > 0 && (
+            {story.acceptanceCriteria && story.acceptanceCriteria.length > 0 && (
               <Card className="p-6">
                 <div className="flex items-start justify-between mb-6">
                   <div>
@@ -235,7 +235,7 @@ export default function StoryPage({ params }: StoryPageProps) {
                 </div>
 
                 <div className="space-y-3">
-                  {story.acceptance_criteria.map((criteria, index) => (
+                  {story.acceptanceCriteria.map((criteria: string, index: number) => (
                     <div
                       key={index}
                       className="p-3 bg-[var(--color-background-subtle)] rounded-lg"

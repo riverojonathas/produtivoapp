@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Feature, UserStory } from '@/types/product'
-import { useRoadmap } from '@/hooks/use-roadmap'
+import { IFeature, IUserStory } from '@/types/feature'
+import { useFeatures } from '@/hooks/use-features'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
@@ -17,51 +17,52 @@ import {
 import { AddStoryDialog } from './add-story-dialog'
 
 interface UserStoriesDialogProps {
+  feature: IFeature
   open: boolean
   onOpenChange: (open: boolean) => void
-  feature: Feature
 }
 
 export function UserStoriesDialog({
+  feature,
   open,
-  onOpenChange,
-  feature
+  onOpenChange
 }: UserStoriesDialogProps) {
   const [isAddingStory, setIsAddingStory] = useState(false)
-  const [selectedStory, setSelectedStory] = useState<UserStory | null>(null)
-  const { updateFeature } = useRoadmap()
+  const [selectedStory, setSelectedStory] = useState<IUserStory | null>(null)
+  const { updateFeature } = useFeatures()
 
   // Calcular progresso baseado nas histórias
   const calculateProgress = () => {
     try {
-      if (!feature.stories || !Array.isArray(feature.stories) || feature.stories.length === 0) return 0
+      if (!feature.user_stories || !Array.isArray(feature.user_stories) || feature.user_stories.length === 0) return 0
       
-      const completedStories = feature.stories.filter(story => story.status === 'completed')
-      return Math.round((completedStories.length / feature.stories.length) * 100)
+      const completedStories = feature.user_stories.filter(story => story.status === 'completed')
+      return Math.round((completedStories.length / feature.user_stories.length) * 100)
     } catch (error) {
       console.error('Erro ao calcular progresso:', error)
       return 0
     }
   }
 
-  const handleAddStory = async (data: Partial<UserStory>) => {
+  const handleAddStory = async (data: Partial<IUserStory>) => {
     try {
-      const newStory: UserStory = {
+      const newStory: IUserStory = {
         id: crypto.randomUUID(),
-        featureId: feature.id,
         title: data.title!,
         description: data.description!,
-        acceptanceCriteria: data.acceptanceCriteria || [],
-        status: data.status || 'open',
         points: data.points || 1,
-        assignees: data.assignees || [],
-        createdAt: new Date(),
-        updatedAt: new Date()
+        status: data.status || 'open',
+        feature_id: feature.id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        acceptanceCriteria: data.acceptanceCriteria || []
       }
 
       await updateFeature.mutateAsync({
-        ...feature,
-        stories: [...(feature.stories || []), newStory]
+        id: feature.id,
+        data: {
+          user_stories: [...(feature.user_stories || []), newStory]
+        }
       })
 
       toast.success('História adicionada com sucesso!')
@@ -72,19 +73,21 @@ export function UserStoriesDialog({
     }
   }
 
-  const handleStoryStatusChange = async (id: string, status: UserStory['status']) => {
+  const handleStoryStatusChange = async (id: string, status: IUserStory['status']) => {
     try {
-      if (!feature.stories) return
+      if (!feature.user_stories) return
 
-      const updatedStories = feature.stories.map(story => 
+      const updatedStories = feature.user_stories.map(story => 
         story.id === id 
-          ? { ...story, status, updatedAt: new Date() }
+          ? { ...story, status, updated_at: new Date().toISOString() }
           : story
       )
 
       await updateFeature.mutateAsync({
-        ...feature,
-        stories: updatedStories
+        id: feature.id,
+        data: {
+          user_stories: updatedStories
+        }
       })
 
       toast.success('Status atualizado com sucesso!')
@@ -96,11 +99,13 @@ export function UserStoriesDialog({
 
   const handleStoryDelete = async (id: string) => {
     try {
-      if (!feature.stories) return
+      if (!feature.user_stories) return
 
       await updateFeature.mutateAsync({
-        ...feature,
-        stories: feature.stories.filter(story => story.id !== id)
+        id: feature.id,
+        data: {
+          user_stories: feature.user_stories.filter(story => story.id !== id)
+        }
       })
 
       toast.success('História excluída com sucesso!')
@@ -110,7 +115,7 @@ export function UserStoriesDialog({
     }
   }
 
-  const getStatusColor = (status: UserStory['status']) => {
+  const getStatusColor = (status: IUserStory['status']) => {
     switch (status) {
       case 'open': return 'bg-gray-500'
       case 'in-progress': return 'bg-blue-500'
@@ -142,8 +147,8 @@ export function UserStoriesDialog({
                   {calculateProgress()}%
                 </span>
                 <span className="text-xs text-[var(--color-text-secondary)]">
-                  {feature.stories?.filter(s => s.status === 'completed').length || 0}/
-                  {feature.stories?.length || 0} histórias concluídas
+                  {feature.user_stories?.filter(s => s.status === 'completed').length || 0}/
+                  {feature.user_stories?.length || 0} histórias concluídas
                 </span>
               </div>
             </div>
@@ -156,7 +161,7 @@ export function UserStoriesDialog({
 
         {/* Lista de Histórias */}
         <div className="space-y-4">
-          {feature.stories?.map(story => (
+          {feature.user_stories?.map(story => (
             <div
               key={story.id}
               className="p-4 border border-[var(--color-border)] rounded-lg hover:border-[var(--color-border-hover)] transition-colors"
@@ -177,7 +182,7 @@ export function UserStoriesDialog({
                     <p><strong>Para que</strong> {story.description.soThat}</p>
                   </div>
 
-                  {story.acceptanceCriteria?.length > 0 && (
+                  {story.acceptanceCriteria && story.acceptanceCriteria.length > 0 && (
                     <div className="mt-3">
                       <h4 className="text-xs font-medium text-[var(--color-text-secondary)] mb-1">
                         Critérios de Aceitação

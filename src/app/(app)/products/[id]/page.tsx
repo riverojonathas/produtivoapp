@@ -17,7 +17,7 @@ import {
   ListChecks,
   Eye,
   LineChart,
-  Tag,
+  TagIcon,
   Files,
   Trash2,
   BarChart3
@@ -32,6 +32,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { ProductTagsDialog } from '@/components/products/product-tags-dialog'
 import { useState, useEffect } from 'react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { IProduct, IProductMetric, IProductRisk } from '@/types/product'
+import { ITag } from '@/types/tag'
 
 interface ProductPageProps {
   params: Promise<{ id: string }>
@@ -77,6 +79,102 @@ export default function ProductPage({ params }: ProductPageProps) {
 
   const handleDuplicate = () => {
     router.push(`/products/new?duplicate=${product.id}`)
+  }
+
+  // Helper function para renderizar métricas
+  const renderMetrics = (metrics?: IProductMetric[]) => {
+    if (!metrics?.length) {
+      return (
+        <p className="text-sm text-[var(--color-text-secondary)]">
+          Nenhuma métrica definida para este produto.
+        </p>
+      )
+    }
+
+    return (
+      <div className="space-y-4">
+        {/* HEART Metrics */}
+        <div>
+          <h3 className="text-sm font-medium mb-3">Métricas HEART</h3>
+          <div className="grid gap-3">
+            {metrics
+              .filter(metric => metric.type === 'heart')
+              .map((metric, index) => (
+                <div 
+                  key={index}
+                  className="p-3 bg-[var(--color-background-subtle)] rounded-lg"
+                >
+                  <div className="flex justify-between items-start">
+                    <span className="text-sm font-medium">{metric.name}</span>
+                  </div>
+                  <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                    {metric.value}
+                  </p>
+                </div>
+              ))}
+          </div>
+        </div>
+
+        {/* North Star Metrics */}
+        <div>
+          <h3 className="text-sm font-medium mb-3">Métricas North Star</h3>
+          <div className="grid gap-3">
+            {metrics
+              .filter(metric => metric.type === 'north_star')
+              .map((metric, index) => (
+                <div 
+                  key={index}
+                  className="p-3 bg-[var(--color-background-subtle)] rounded-lg"
+                >
+                  <div className="flex justify-between items-start">
+                    <span className="text-sm font-medium">{metric.name}</span>
+                  </div>
+                  <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                    {metric.value}
+                  </p>
+                </div>
+              ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Helper function para renderizar riscos
+  const renderRisks = (risks?: IProductRisk[]) => {
+    if (!risks?.length) {
+      return (
+        <p className="text-sm text-[var(--color-text-secondary)]">
+          Nenhum risco identificado
+        </p>
+      )
+    }
+
+    return (
+      <div className="space-y-4">
+        {risks.map((risk, index) => (
+          <div 
+            key={index} 
+            className="p-4 bg-[var(--color-background-subtle)] rounded-lg border border-[var(--color-border)] hover:border-[var(--color-primary)] transition-colors"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <Badge variant="secondary" className="text-[10px] bg-amber-500/10 text-amber-600">
+                {risk.category}
+              </Badge>
+            </div>
+            <p className="text-sm mb-3">{risk.description}</p>
+            <div className="flex items-start gap-2">
+              <Badge variant="secondary" className="text-[10px] shrink-0">
+                Mitigação
+              </Badge>
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                {risk.mitigation}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    )
   }
 
   return (
@@ -187,7 +285,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                       className="h-8 w-8 p-0"
                       onClick={() => setShowTagsDialog(true)}
                     >
-                      <Tag className="w-4 h-4" />
+                      <TagIcon className="w-4 h-4" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
@@ -356,42 +454,14 @@ export default function ProductPage({ params }: ProductPageProps) {
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-amber-500" />
                   <h2 className="text-base font-medium">Riscos e Mitigações</h2>
-                  {product.product_risks?.length > 0 && (
+                  {product.product_risks && product.product_risks.length > 0 && (
                     <Badge variant="secondary" className="text-[10px]">
                       {product.product_risks.length} {product.product_risks.length === 1 ? 'risco' : 'riscos'}
                     </Badge>
                   )}
                 </div>
               </div>
-              {product.product_risks?.length > 0 ? (
-                <div className="space-y-4">
-                  {product.product_risks.map((risk, index) => (
-                    <div 
-                      key={index} 
-                      className="p-4 bg-[var(--color-background-subtle)] rounded-lg border border-[var(--color-border)] hover:border-[var(--color-primary)] transition-colors"
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <Badge variant="secondary" className="text-[10px] bg-amber-500/10 text-amber-600">
-                          {risk.category}
-                        </Badge>
-                      </div>
-                      <p className="text-sm mb-3">{risk.description}</p>
-                      <div className="flex items-start gap-2">
-                        <Badge variant="secondary" className="text-[10px] shrink-0">
-                          Mitigação
-                        </Badge>
-                        <p className="text-sm text-[var(--color-text-secondary)]">
-                          {risk.mitigation}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-[var(--color-text-secondary)]">
-                  Nenhum risco identificado
-                </p>
-              )}
+              {renderRisks(product.product_risks)}
             </Card>
           </div>
 
@@ -431,10 +501,10 @@ export default function ProductPage({ params }: ProductPageProps) {
             {/* Tags */}
             <Card className="p-6">
               <h2 className="text-base font-medium mb-6 flex items-center gap-2">
-                <Tag className="w-4 h-4 text-[var(--color-primary)]" />
+                <TagIcon className="w-4 h-4 text-[var(--color-primary)]" />
                 Tags
               </h2>
-              {product.tags?.length > 0 ? (
+              {product.tags && product.tags.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {product.tags.map(tag => (
                     <Badge 
@@ -557,57 +627,7 @@ export default function ProductPage({ params }: ProductPageProps) {
             <DialogTitle>Métricas do Produto</DialogTitle>
           </DialogHeader>
           <div className="mt-4">
-            {product.product_metrics?.length > 0 ? (
-              <div className="space-y-4">
-                {/* HEART Metrics */}
-                <div>
-                  <h3 className="text-sm font-medium mb-3">Métricas HEART</h3>
-                  <div className="grid gap-3">
-                    {product.product_metrics
-                      .filter(metric => metric.type === 'heart')
-                      .map((metric, index) => (
-                        <div 
-                          key={index}
-                          className="p-3 bg-[var(--color-background-subtle)] rounded-lg"
-                        >
-                          <div className="flex justify-between items-start">
-                            <span className="text-sm font-medium">{metric.name}</span>
-                          </div>
-                          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                            {metric.value}
-                          </p>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-
-                {/* North Star Metrics */}
-                <div>
-                  <h3 className="text-sm font-medium mb-3">Métricas North Star</h3>
-                  <div className="grid gap-3">
-                    {product.product_metrics
-                      .filter(metric => metric.type === 'north_star')
-                      .map((metric, index) => (
-                        <div 
-                          key={index}
-                          className="p-3 bg-[var(--color-background-subtle)] rounded-lg"
-                        >
-                          <div className="flex justify-between items-start">
-                            <span className="text-sm font-medium">{metric.name}</span>
-                          </div>
-                          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                            {metric.value}
-                          </p>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-[var(--color-text-secondary)]">
-                Nenhuma métrica definida para este produto.
-              </p>
-            )}
+            {renderMetrics(product.product_metrics)}
           </div>
         </DialogContent>
       </Dialog>
@@ -616,7 +636,7 @@ export default function ProductPage({ params }: ProductPageProps) {
         productId={product.id}
         open={showTagsDialog}
         onOpenChange={setShowTagsDialog}
-        currentTags={product.tags}
+        currentTags={product.tags || []}
       />
     </div>
   )

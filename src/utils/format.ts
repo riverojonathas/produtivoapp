@@ -1,3 +1,6 @@
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+
 export const formatPrice = (price: number): string => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -5,6 +8,7 @@ export const formatPrice = (price: number): string => {
   }).format(price);
 };
 
-export const formatDate = (date: Date): string => {
-  return new Intl.DateTimeFormat('pt-BR').format(date);
-}; 
+export const formatDate = (date: string | undefined): string => {
+  if (!date) return '-'
+  return format(new Date(date), "dd MMM, yy", { locale: ptBR })
+} 

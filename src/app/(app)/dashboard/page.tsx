@@ -159,9 +159,9 @@ export default function DashboardPage() {
       {preferences?.showWelcomeGuide && (
         <div className="px-6">
           <WelcomeGuide 
-            completedSteps={preferences.completedSteps}
-            onStepComplete={async (stepId) => {
-              const newSteps = [...(preferences.completedSteps || []), stepId]
+            completedSteps={preferences?.completedSteps || []}
+            onStepComplete={async (stepId: string) => {
+              const newSteps = [...(preferences?.completedSteps || []), stepId]
               await updatePreferences({
                 ...preferences,
                 completedSteps: newSteps

@@ -32,6 +32,8 @@ import {
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
+type MoscowPriority = 'must' | 'should' | 'could' | 'wont'
+
 interface PrioritizationDialogProps {
   feature: IFeature
   open: boolean
@@ -51,12 +53,19 @@ export function PrioritizationDialog({
     confidence: feature.rice_confidence || 0,
     effort: feature.rice_effort || 0
   })
-  const [moscowPriority, setMoscowPriority] = useState(feature.moscow_priority || '')
+  const [moscowPriority, setMoscowPriority] = useState<MoscowPriority | undefined>(
+    feature.moscow_priority as MoscowPriority | undefined
+  )
 
   // Calcula o RICE Score
   const riceScore = riceValues.effort > 0
     ? ((riceValues.reach * riceValues.impact * riceValues.confidence) / riceValues.effort).toFixed(1)
     : '0.0'
+
+  // Função para lidar com a mudança de prioridade
+  const handlePriorityChange = (value: string) => {
+    setMoscowPriority(value as MoscowPriority)
+  }
 
   const handleSave = async () => {
     try {
@@ -68,7 +77,7 @@ export function PrioritizationDialog({
           rice_impact: riceValues.impact,
           rice_confidence: riceValues.confidence,
           rice_effort: riceValues.effort,
-          moscow_priority: moscowPriority || undefined
+          moscow_priority: moscowPriority
         }
       })
       toast.success('Priorização atualizada com sucesso')
@@ -237,7 +246,7 @@ export function PrioritizationDialog({
 
             <Select
               value={moscowPriority}
-              onValueChange={setMoscowPriority}
+              onValueChange={handlePriorityChange}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione a prioridade MoSCoW" />

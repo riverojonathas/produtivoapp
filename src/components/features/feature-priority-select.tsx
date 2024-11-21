@@ -14,14 +14,14 @@ import { FEATURE_PRIORITY, FeaturePriority } from '@/types/feature'
 import { toast } from 'sonner'
 
 interface FeaturePrioritySelectProps {
-  priority: FeaturePriority
+  priority?: FeaturePriority
   onPriorityChange: (priority: FeaturePriority) => Promise<void>
   size?: 'sm' | 'default'
   disabled?: boolean
 }
 
 export function FeaturePrioritySelect({ 
-  priority, 
+  priority = 'medium',
   onPriorityChange,
   size = 'default',
   disabled = false

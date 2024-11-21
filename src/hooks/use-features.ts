@@ -35,7 +35,7 @@ export function useFeatures(id?: string): UseFeatureReturn {
         .from('features')
         .select(`
           *,
-          stories (*),
+          user_stories (*),
           feature_dependencies!feature_dependencies_feature_id_fkey (
             dependent:features!feature_dependencies_dependent_id_fkey (
               id,
@@ -93,7 +93,7 @@ export function useFeatures(id?: string): UseFeatureReturn {
         const {
           dependencies,
           dependent_features,
-          stories,
+          user_stories,
           created_at,
           id: featureId,
           ...cleanData
@@ -107,7 +107,7 @@ export function useFeatures(id?: string): UseFeatureReturn {
           .eq('id', id)
           .select(`
             *,
-            stories (*)
+            user_stories (*)
           `)
           .single()
 
@@ -122,7 +122,7 @@ export function useFeatures(id?: string): UseFeatureReturn {
             ...updatedFeature,
             dependencies: f.dependencies,
             dependent_features: f.dependent_features,
-            stories: updatedFeature.stories
+            user_stories: updatedFeature.user_stories
           } : f
         ))
 
@@ -130,7 +130,7 @@ export function useFeatures(id?: string): UseFeatureReturn {
           ...updatedFeature,
           dependencies: updatedFeature.dependencies || [],
           dependent_features: updatedFeature.dependent_features || [],
-          stories: updatedFeature.stories || []
+          user_stories: updatedFeature.user_stories || []
         }
       } catch (error) {
         console.error('Erro detalhado ao atualizar feature:', error)
@@ -146,14 +146,14 @@ export function useFeatures(id?: string): UseFeatureReturn {
     mutateAsync: async (data: Partial<IFeature>) => {
       setIsPending(true)
       try {
-        const { dependencies, dependent_features, stories, ...createData } = data
+        const { dependencies, dependent_features, user_stories, ...createData } = data
 
         const { data: newFeature, error } = await supabase
           .from('features')
           .insert([createData])
           .select(`
             *,
-            stories (*)
+            user_stories (*)
           `)
           .single()
 

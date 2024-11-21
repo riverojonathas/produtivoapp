@@ -1,21 +1,4 @@
-export interface IProduct {
-  id: string
-  name: string
-  description: string
-  status: ProductStatus
-  team?: string[]
-  created_at: string
-  owner_id: string
-  avatar_url?: string | null
-  vision?: string | null
-  target_audience?: string | null
-  risks_count?: number
-  metrics_count?: number
-  product_metrics?: IProductMetric[]
-  product_risks?: IProductRisk[]
-  tags?: Tag[]
-  product_tags?: Tag[]
-}
+import { ITag } from '@/types/tag'
 
 export interface IProductMetric {
   id: string
@@ -33,41 +16,47 @@ export interface IProductRisk {
   mitigation: string
 }
 
-export interface Tag {
-  id: string
-  name: string
-  type: 'priority' | 'phase' | 'category' | 'custom'
-  color?: string
+export interface IProductTag extends ITag {
   product_id: string
-  created_at: string
-  updated_at: string
 }
 
 export type ProductStatus = 'active' | 'inactive' | 'archived' | 'development'
 
-export interface Feature {
+export interface IProduct {
   id: string
-  title: string
-  description: {
-    what?: string
-    why?: string
-    how?: string
-    who?: string
-  }
-  status: 'backlog' | 'doing' | 'done' | 'blocked'
-  priority: 'low' | 'medium' | 'high' | 'urgent'
-  product_id: string
-  owner_id: string
+  name: string
+  description: string
+  status: ProductStatus
+  team?: string[]
   created_at: string
-  updated_at: string
-  start_date?: string
-  end_date?: string
-  dependencies?: {
-    id: string
-    title: string
-    status: string
-  }[]
-  assignees?: string[]
-  tags?: string[]
+  owner_id: string
+  avatar_url?: string | null
+  vision?: string | null
+  target_audience?: string | null
+  risks_count?: number
+  metrics_count?: number
+  product_metrics?: IProductMetric[]
+  product_risks?: IProductRisk[]
+  product_tags?: IProductTag[]
+  tags?: ITag[]
+  priority?: 'low' | 'medium' | 'high' | 'urgent'
   progress?: number
+}
+
+// Tipo para uso em componentes que não aceitam null
+export type Product = Omit<IProduct, 'vision' | 'avatar_url' | 'target_audience'> & {
+  vision?: string
+  avatar_url?: string
+  target_audience?: string
+}
+
+// Função helper para converter IProduct para Product
+export function toProduct(product: IProduct): Product {
+  return {
+    ...product,
+    vision: product.vision || undefined,
+    avatar_url: product.avatar_url || undefined,
+    target_audience: product.target_audience || undefined,
+    tags: product.product_tags || product.tags || []
+  }
 } 

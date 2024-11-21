@@ -5,46 +5,40 @@ import {
   CheckCircle2
 } from 'lucide-react'
 
-export interface IUserStory {
-  id: string
-  title: string
-  description: {
-    asA: string
-    iWant: string
-    soThat: string
-  }
-  points: number
-  status: StoryStatus
-  feature_id: string
-  owner_id: string
-  created_at: string
-  updated_at: string
-  acceptance_criteria?: string[]
-  assignees?: string[]
-  dependencies?: {
-    id: string
-    title: string
-    status: StoryStatus
-  }[]
-  related_stories?: {
-    id: string
-    title: string
-    status: StoryStatus
-    relationship_type: 'blocks' | 'blocked_by' | 'related' | 'duplicates'
-  }[]
-  estimated_hours?: number
-  actual_hours?: number
-  start_date?: string
-  end_date?: string
-  deadline?: string
-  time_tracking?: {
-    logged_hours: number
-    remaining_hours: number
-    last_update: string
-  }
+export interface IUserStoryDescription {
+  asA: string
+  iWant: string
+  soThat: string
+}
+
+export interface ITimeTracking {
+  logged_hours: number
+  remaining_hours: number
+  last_update: string
 }
 
 export type StoryStatus = 'open' | 'in-progress' | 'completed' | 'blocked'
+
+export interface IUserStory {
+  id: string
+  title: string
+  description: IUserStoryDescription
+  points: number
+  status: StoryStatus
+  feature_id: string
+  created_at: string
+  updated_at: string
+  acceptanceCriteria?: string[]
+  assignees?: string[]
+  estimated_hours?: number
+  start_date?: string
+  deadline?: string
+  time_tracking?: ITimeTracking
+}
+
+export type UserStoryFormData = Partial<Omit<IUserStory, 'description'>> & {
+  description: Partial<IUserStoryDescription>
+}
 
 export const STORY_STATUS = {
   open: {

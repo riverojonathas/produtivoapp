@@ -10,9 +10,11 @@ import { Button } from "@/components/ui/button"
 import { SlidersHorizontal, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
+import { ProductStatus } from '@/types/product'
 
-interface Filters {
-  status: string[]
+// Interface para os filtros
+export interface ProductFilters {
+  status: ProductStatus[]
   dateRange: string
   hasVision: boolean | null
   hasTeam: boolean | null
@@ -21,13 +23,13 @@ interface Filters {
 }
 
 interface ProductFiltersProps {
-  onFiltersChange: (filters: Filters) => void
+  onFiltersChange: (filters: ProductFilters) => void
 }
 
 const statusOptions = [
-  { value: 'active', label: 'Ativo', color: 'bg-emerald-500/8 text-emerald-600' },
-  { value: 'development', label: 'Em desenvolvimento', color: 'bg-blue-500/8 text-blue-600' },
-  { value: 'archived', label: 'Arquivado', color: 'bg-slate-500/8 text-slate-600' }
+  { value: 'active' as ProductStatus, label: 'Ativo', color: 'bg-emerald-500/8 text-emerald-600' },
+  { value: 'development' as ProductStatus, label: 'Em desenvolvimento', color: 'bg-blue-500/8 text-blue-600' },
+  { value: 'archived' as ProductStatus, label: 'Arquivado', color: 'bg-slate-500/8 text-slate-600' }
 ]
 
 const dateRangeOptions = [
@@ -45,7 +47,7 @@ const characteristicOptions = [
 ]
 
 export function ProductFilters({ onFiltersChange }: ProductFiltersProps) {
-  const [filters, setFilters] = useState<Filters>({
+  const [filters, setFilters] = useState<ProductFilters>({
     status: [],
     dateRange: 'all',
     hasVision: null,
@@ -56,38 +58,35 @@ export function ProductFilters({ onFiltersChange }: ProductFiltersProps) {
 
   const [open, setOpen] = useState(false)
 
-  const handleFilterChange = (newFilters: Partial<Filters>) => {
+  const handleFilterChange = (newFilters: Partial<ProductFilters>) => {
     const updatedFilters = { ...filters, ...newFilters }
     setFilters(updatedFilters)
     onFiltersChange(updatedFilters)
   }
 
-  const activeFiltersCount = Object.entries(filters).reduce((count, [key, value]) => {
-    if (Array.isArray(value) && value.length > 0) return count + 1
-    if (typeof value === 'boolean' && value !== null) return count + 1
-    if (key === 'dateRange' && value !== 'all') return count + 1
-    return count
-  }, 0)
+  const activeFiltersCount = [
+    filters.status.length > 0,
+    filters.dateRange !== 'all',
+    filters.hasVision !== null,
+    filters.hasTeam !== null,
+    filters.hasRisks !== null,
+    filters.hasMetrics !== null
+  ].filter(Boolean).length
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
-          className={cn(
-            "h-8 px-2.5 text-xs hover:text-[var(--color-text-primary)]",
-            activeFiltersCount > 0 
-              ? "text-[var(--color-primary)]" 
-              : "text-[var(--color-text-secondary)]"
-          )}
+          className="h-8 border-dashed"
         >
-          <SlidersHorizontal className="w-3.5 h-3.5 mr-2" />
+          <SlidersHorizontal className="mr-2 h-3.5 w-3.5" />
           Filtros
           {activeFiltersCount > 0 && (
             <Badge 
               variant="secondary" 
-              className="ml-2 h-4 w-4 p-0 flex items-center justify-center text-[10px] bg-[var(--color-primary)] text-white"
+              className="ml-2 h-5 px-1.5 bg-[var(--color-primary)] text-white"
             >
               {activeFiltersCount}
             </Badge>
@@ -95,9 +94,8 @@ export function ProductFilters({ onFiltersChange }: ProductFiltersProps) {
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-72 p-3 bg-[var(--color-background-elevated)] border border-[var(--color-border)] shadow-lg" 
-        align="end"
-        sideOffset={8}
+        className="w-[280px] p-4" 
+        align="start"
       >
         <div className="space-y-4">
           {/* Status */}
@@ -129,9 +127,9 @@ export function ProductFilters({ onFiltersChange }: ProductFiltersProps) {
             </div>
           </div>
 
-          {/* Período */}
+          {/* Data */}
           <div>
-            <h4 className="text-xs font-medium mb-2 text-[var(--color-text-secondary)]">Período</h4>
+            <h4 className="text-xs font-medium mb-2 text-[var(--color-text-secondary)]">Data</h4>
             <div className="flex flex-wrap gap-1">
               {dateRangeOptions.map(option => (
                 <button
@@ -161,16 +159,16 @@ export function ProductFilters({ onFiltersChange }: ProductFiltersProps) {
                 <button
                   key={option.key}
                   onClick={() => handleFilterChange({ 
-                    [option.key]: filters[option.key as keyof Filters] === true ? null : true 
+                    [option.key]: filters[option.key as keyof ProductFilters] === true ? null : true 
                   })}
                   className={cn(
                     "inline-flex items-center px-2 py-1 rounded-md text-xs transition-colors",
-                    filters[option.key as keyof Filters] === true
+                    filters[option.key as keyof ProductFilters] === true
                       ? "bg-[var(--color-primary-subtle)] text-[var(--color-primary)]"
                       : "text-[var(--color-text-secondary)] hover:bg-[var(--color-background-subtle)]"
                   )}
                 >
-                  {filters[option.key as keyof Filters] === true && (
+                  {filters[option.key as keyof ProductFilters] === true && (
                     <Check className="w-3 h-3 mr-1" />
                   )}
                   {option.label}

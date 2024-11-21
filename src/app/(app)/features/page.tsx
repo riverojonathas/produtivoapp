@@ -64,12 +64,22 @@ import { FEATURE_PRIORITY, FeaturePriority } from '@/types/feature'
 
 type ViewMode = 'grid' | 'list' | 'table' | 'kanban'
 
+// Interface para os filtros
+interface FeatureFilters {
+  status: FeatureStatus[]
+  dateRange: string
+  priority: FeaturePriority[]
+  hasDescription: boolean | null
+  hasStories: boolean | null
+  product: string | null
+}
+
 export default function FeaturesPage() {
   const { features = [], isLoading, deleteFeature, updateFeature } = useFeatures()
   const [searchTerm, setSearchTerm] = useState('')
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const router = useRouter()
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<FeatureFilters>({
     status: [],
     dateRange: 'all',
     priority: [],
@@ -88,7 +98,7 @@ export default function FeaturesPage() {
       { id: 'title', label: 'Título', visible: true },
       { id: 'status', label: 'Status', visible: true },
       { id: 'priority', label: 'Prioridade', visible: true },
-      { id: 'stories', label: 'Histórias', visible: true },
+      { id: 'user_stories', label: 'Histórias', visible: true },
       { id: 'progress', label: 'Progresso', visible: true },
       { id: 'date', label: 'Data', visible: true },
       { id: 'actions', label: 'Ações', visible: true }
@@ -137,31 +147,31 @@ export default function FeaturesPage() {
     if (!matchesSearch) return false
 
     // Filtro de status
-    if (filters.status.length > 0 && !filters.status.includes(feature.status)) {
+    if (filters.status.length > 0 && !filters.status.includes(feature.status as FeatureStatus)) {
       return false
     }
 
     // Filtro de data
-    if (filters.dateRange !== 'all') {
+    if (filters.dateRange !== 'all' && feature.created_at) {
       const featureDate = new Date(feature.created_at)
       const daysAgo = subDays(new Date(), parseInt(filters.dateRange))
       if (featureDate < daysAgo) return false
     }
 
     // Filtro de prioridade
-    if (filters.priority.length > 0 && !filters.priority.includes(feature.priority)) {
+    if (filters.priority.length > 0 && !filters.priority.includes(feature.priority as FeaturePriority)) {
       return false
     }
 
     // Filtro de descrição
     if (filters.hasDescription !== null) {
-      const hasDescription = !!feature.description?.what
+      const hasDescription = !!feature.description
       if (hasDescription !== filters.hasDescription) return false
     }
 
     // Filtro de histórias
     if (filters.hasStories !== null) {
-      const hasStories = (feature.stories?.length || 0) > 0
+      const hasStories = (feature.user_stories?.length || 0) > 0
       if (hasStories !== filters.hasStories) return false
     }
 
@@ -395,11 +405,11 @@ export default function FeaturesPage() {
                         />
                       </TableCell>
                     )
-                  case 'stories':
+                  case 'user_stories':
                     return (
                       <TableCell key={column.id}>
                         <span className="text-sm">
-                          {feature.stories?.length || 0}
+                          {feature.user_stories?.length || 0}
                         </span>
                       </TableCell>
                     )
@@ -627,10 +637,10 @@ export default function FeaturesPage() {
                         />
 
                         <div className="flex items-center gap-2 text-[var(--color-text-secondary)]">
-                          {feature.stories?.length > 0 && (
+                          {feature.user_stories && feature.user_stories.length > 0 && (
                             <div className="flex items-center gap-1">
                               <BookOpen className="w-3 h-3" />
-                              <span>{feature.stories.length}</span>
+                              <span>{feature.user_stories.length}</span>
                             </div>
                           )}
                           {feature.progress !== undefined && (
@@ -736,18 +746,35 @@ export default function FeaturesPage() {
 
             {/* Filtros */}
             <ProductFilters 
-              onFiltersChange={setFilters}
-              customFilters={[
+              onFiltersChange={(newFilters) => {
+                setFilters(prev => ({
+                  ...prev,
+                  status: newFilters.status.map(s => s as FeatureStatus),
+                  dateRange: newFilters.dateRange,
+                  priority: prev.priority,
+                  hasDescription: prev.hasDescription,
+                  hasStories: prev.hasStories,
+                  product: prev.product
+                }))
+              }}
+              filters={[
+                {
+                  type: 'multi-select',
+                  label: 'Status',
+                  key: 'status',
+                  options: Object.entries(FEATURE_STATUS).map(([key, status]) => ({
+                    label: status.label,
+                    value: key
+                  }))
+                },
                 {
                   type: 'multi-select',
                   label: 'Prioridade',
                   key: 'priority',
-                  options: [
-                    { label: 'Baixa', value: 'low' },
-                    { label: 'Média', value: 'medium' },
-                    { label: 'Alta', value: 'high' },
-                    { label: 'Urgente', value: 'urgent' }
-                  ]
+                  options: Object.entries(FEATURE_PRIORITY).map(([key, priority]) => ({
+                    label: priority.label,
+                    value: key
+                  }))
                 },
                 {
                   type: 'boolean',
@@ -764,7 +791,7 @@ export default function FeaturesPage() {
 
             {/* Visualizações */}
             <div className="flex items-center gap-1 border-l border-[var(--color-border)] pl-3">
-              {viewMode === 'table' && (
+              {viewMode === 'table' && tableColumns && (
                 <TableColumnsConfig
                   columns={tableColumns}
                   onChange={setTableColumns}
