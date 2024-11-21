@@ -1,30 +1,29 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
-import { Filter } from 'lucide-react'
+import { useState } from 'react'
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuCheckboxItem,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
+import { Filter } from 'lucide-react'
+import { cn } from "@/lib/utils"
 
 interface FeatureFiltersProps {
   onFiltersChange: (filters: any) => void
-  customFilters?: Array<{
+  customFilters?: {
     type: 'multi-select' | 'boolean'
     label: string
     key: string
-    options?: Array<{ label: string; value: string }>
-  }>
+    options?: { label: string; value: string }[]
+  }[]
 }
 
 export function FeatureFilters({ onFiltersChange, customFilters = [] }: FeatureFiltersProps) {
-  const [activeFilters, setActiveFilters] = useState<Record<string, any>>({
+  const [activeFilters, setActiveFilters] = useState({
     status: [],
     dateRange: 'all',
     priority: [],
@@ -67,10 +66,9 @@ export function FeatureFilters({ onFiltersChange, customFilters = [] }: FeatureF
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[200px]">
-        <DropdownMenuLabel>Status</DropdownMenuLabel>
-        <DropdownMenuSeparator />
+        <DropdownMenuItem>Status</DropdownMenuItem>
         {['backlog', 'doing', 'done', 'blocked'].map(status => (
-          <DropdownMenuCheckboxItem
+          <DropdownMenuItem
             key={status}
             checked={activeFilters.status.includes(status)}
             onCheckedChange={(checked) => {
@@ -81,16 +79,15 @@ export function FeatureFilters({ onFiltersChange, customFilters = [] }: FeatureF
             }}
           >
             {status.charAt(0).toUpperCase() + status.slice(1)}
-          </DropdownMenuCheckboxItem>
+          </DropdownMenuItem>
         ))}
 
         {/* Filtros customizados */}
         {customFilters.map(filter => (
           <React.Fragment key={filter.key}>
-            <DropdownMenuLabel>{filter.label}</DropdownMenuLabel>
-            <DropdownMenuSeparator />
+            <DropdownMenuItem>{filter.label}</DropdownMenuItem>
             {filter.type === 'multi-select' && filter.options?.map(option => (
-              <DropdownMenuCheckboxItem
+              <DropdownMenuItem
                 key={option.value}
                 checked={activeFilters[filter.key]?.includes(option.value)}
                 onCheckedChange={(checked) => {
@@ -101,22 +98,22 @@ export function FeatureFilters({ onFiltersChange, customFilters = [] }: FeatureF
                 }}
               >
                 {option.label}
-              </DropdownMenuCheckboxItem>
+              </DropdownMenuItem>
             ))}
             {filter.type === 'boolean' && (
               <>
-                <DropdownMenuCheckboxItem
+                <DropdownMenuItem
                   checked={activeFilters[filter.key] === true}
                   onCheckedChange={() => handleFilterChange(filter.key, true)}
                 >
                   Sim
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
+                </DropdownMenuItem>
+                <DropdownMenuItem
                   checked={activeFilters[filter.key] === false}
                   onCheckedChange={() => handleFilterChange(filter.key, false)}
                 >
                   Não
-                </DropdownMenuCheckboxItem>
+                </DropdownMenuItem>
               </>
             )}
           </React.Fragment>

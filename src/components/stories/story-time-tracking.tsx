@@ -65,19 +65,20 @@ export function StoryTimeTracking({ story, onUpdate }: StoryTimeTrackingProps) {
     setTrackingStartTime(null)
   }
 
-  const handleUpdateEstimate = async (hours: number) => {
+  const handleUpdateTime = async (hours: number) => {
     try {
       await onUpdate({
         estimated_hours: hours,
         time_tracking: {
-          ...story.time_tracking,
-          remaining_hours: hours - (story.time_tracking?.logged_hours || 0)
+          logged_hours: story.time_tracking?.logged_hours || 0,
+          remaining_hours: hours - (story.time_tracking?.logged_hours || 0),
+          last_update: new Date().toISOString()
         }
       })
-      toast.success('Estimativa atualizada com sucesso')
+      toast.success('Tempo estimado atualizado')
     } catch (error) {
-      console.error('Erro ao atualizar estimativa:', error)
-      toast.error('Erro ao atualizar estimativa')
+      console.error('Erro ao atualizar tempo:', error)
+      toast.error('Erro ao atualizar tempo')
     }
   }
 
@@ -148,7 +149,7 @@ export function StoryTimeTracking({ story, onUpdate }: StoryTimeTrackingProps) {
             <Input
               type="number"
               value={story.estimated_hours || ''}
-              onChange={(e) => handleUpdateEstimate(parseFloat(e.target.value))}
+              onChange={(e) => handleUpdateTime(parseFloat(e.target.value))}
               className="w-20 h-7 text-sm text-right"
             />
             <span className="text-sm text-[var(--color-text-secondary)]">

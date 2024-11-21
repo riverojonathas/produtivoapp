@@ -30,7 +30,7 @@ import { useState } from 'react'
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { IFeature, IUserStory } from '@/types/feature'
-import { Avatar } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AddDependencyDialog } from '@/components/features/add-dependency-dialog'
 import { FeatureStatusSelect } from '@/components/features/feature-status-select'
 import { FeaturePrioritySelect } from '@/components/features/feature-priority-select'
