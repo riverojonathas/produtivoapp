@@ -11,9 +11,19 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Filter } from 'lucide-react'
 import { cn } from "@/lib/utils"
+import { Fragment } from 'react'
+
+interface FilterValue {
+  status: string[]
+  dateRange: string
+  priority: string[]
+  hasDescription: boolean | null
+  hasStories: boolean | null
+  product: string | null
+}
 
 interface FeatureFiltersProps {
-  onFiltersChange: (filters: any) => void
+  onFiltersChange: (filters: FilterValue) => void
   customFilters?: {
     type: 'multi-select' | 'boolean'
     label: string
@@ -23,7 +33,7 @@ interface FeatureFiltersProps {
 }
 
 export function FeatureFilters({ onFiltersChange, customFilters = [] }: FeatureFiltersProps) {
-  const [activeFilters, setActiveFilters] = useState({
+  const [activeFilters, setActiveFilters] = useState<FilterValue>({
     status: [],
     dateRange: 'all',
     priority: [],
@@ -32,7 +42,7 @@ export function FeatureFilters({ onFiltersChange, customFilters = [] }: FeatureF
     product: null
   })
 
-  const handleFilterChange = (key: string, value: any) => {
+  const handleFilterChange = (key: string, value: string | string[] | boolean | null) => {
     const newFilters = { ...activeFilters, [key]: value }
     setActiveFilters(newFilters)
     onFiltersChange(newFilters)
@@ -84,16 +94,16 @@ export function FeatureFilters({ onFiltersChange, customFilters = [] }: FeatureF
 
         {/* Filtros customizados */}
         {customFilters.map(filter => (
-          <React.Fragment key={filter.key}>
+          <Fragment key={filter.key}>
             <DropdownMenuItem>{filter.label}</DropdownMenuItem>
             {filter.type === 'multi-select' && filter.options?.map(option => (
               <DropdownMenuItem
                 key={option.value}
-                checked={activeFilters[filter.key]?.includes(option.value)}
-                onCheckedChange={(checked) => {
-                  const newValue = checked
-                    ? [...(activeFilters[filter.key] || []), option.value]
-                    : activeFilters[filter.key].filter((v: string) => v !== option.value)
+                onClick={() => {
+                  const currentValues = activeFilters[filter.key as keyof FilterValue] as string[]
+                  const newValue = currentValues?.includes(option.value)
+                    ? currentValues.filter(v => v !== option.value)
+                    : [...(currentValues || []), option.value]
                   handleFilterChange(filter.key, newValue)
                 }}
               >
@@ -116,7 +126,7 @@ export function FeatureFilters({ onFiltersChange, customFilters = [] }: FeatureF
                 </DropdownMenuItem>
               </>
             )}
-          </React.Fragment>
+          </Fragment>
         ))}
       </DropdownMenuContent>
     </DropdownMenu>

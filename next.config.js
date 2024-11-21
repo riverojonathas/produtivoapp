@@ -6,8 +6,10 @@ const nextConfig = {
     appDir: true,
   },
   env: {
-    PORT: 3000,
+    PORT: process.env.PORT?.toString() || '3000'
   },
+  experimental: {
+  }
 }
 
 module.exports = nextConfig 
