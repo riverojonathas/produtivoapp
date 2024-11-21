@@ -7,6 +7,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuCheckboxItem
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
 import { Filter } from 'lucide-react'
@@ -78,10 +79,10 @@ export function FeatureFilters({ onFiltersChange, customFilters = [] }: FeatureF
       <DropdownMenuContent align="end" className="w-[200px]">
         <DropdownMenuItem>Status</DropdownMenuItem>
         {['backlog', 'doing', 'done', 'blocked'].map(status => (
-          <DropdownMenuItem
+          <DropdownMenuCheckboxItem
             key={status}
             checked={activeFilters.status.includes(status)}
-            onCheckedChange={(checked) => {
+            onCheckedChange={(checked: boolean) => {
               const newStatus = checked
                 ? [...activeFilters.status, status]
                 : activeFilters.status.filter((s: string) => s !== status)
@@ -89,7 +90,7 @@ export function FeatureFilters({ onFiltersChange, customFilters = [] }: FeatureF
             }}
           >
             {status.charAt(0).toUpperCase() + status.slice(1)}
-          </DropdownMenuItem>
+          </DropdownMenuCheckboxItem>
         ))}
 
         {/* Filtros customizados */}
@@ -97,33 +98,34 @@ export function FeatureFilters({ onFiltersChange, customFilters = [] }: FeatureF
           <Fragment key={filter.key}>
             <DropdownMenuItem>{filter.label}</DropdownMenuItem>
             {filter.type === 'multi-select' && filter.options?.map(option => (
-              <DropdownMenuItem
+              <DropdownMenuCheckboxItem
                 key={option.value}
-                onClick={() => {
+                checked={(activeFilters[filter.key as keyof FilterValue] as string[])?.includes(option.value)}
+                onCheckedChange={(checked: boolean) => {
                   const currentValues = activeFilters[filter.key as keyof FilterValue] as string[]
-                  const newValue = currentValues?.includes(option.value)
-                    ? currentValues.filter(v => v !== option.value)
-                    : [...(currentValues || []), option.value]
+                  const newValue = checked
+                    ? [...(currentValues || []), option.value]
+                    : currentValues.filter(v => v !== option.value)
                   handleFilterChange(filter.key, newValue)
                 }}
               >
                 {option.label}
-              </DropdownMenuItem>
+              </DropdownMenuCheckboxItem>
             ))}
             {filter.type === 'boolean' && (
               <>
-                <DropdownMenuItem
-                  checked={activeFilters[filter.key] === true}
+                <DropdownMenuCheckboxItem
+                  checked={activeFilters[filter.key as keyof FilterValue] === true}
                   onCheckedChange={() => handleFilterChange(filter.key, true)}
                 >
                   Sim
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  checked={activeFilters[filter.key] === false}
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={activeFilters[filter.key as keyof FilterValue] === false}
                   onCheckedChange={() => handleFilterChange(filter.key, false)}
                 >
                   Não
-                </DropdownMenuItem>
+                </DropdownMenuCheckboxItem>
               </>
             )}
           </Fragment>

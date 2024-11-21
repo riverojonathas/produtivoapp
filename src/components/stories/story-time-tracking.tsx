@@ -243,8 +243,10 @@ export function StoryTimeTracking({ story, onUpdate }: StoryTimeTrackingProps) {
               <CalendarComponent
                 mode="single"
                 selected={story.deadline ? new Date(story.deadline) : undefined}
-                onSelect={(date) => date && handleUpdateDeadline(date)}
-                initialFocus
+                onSelect={(date: Date | undefined) => {
+                  if (date) handleUpdateDeadline(date);
+                }}
+                required={false}
               />
             </PopoverContent>
           </Popover>
