@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
+  output: 'export',
   experimental: {
     serverActions: {
       allowedOrigins: ['localhost:3000', 'vercel.app']
@@ -16,6 +16,9 @@ const nextConfig = {
   distDir: '.next',
   generateBuildId: async () => {
     return 'build-' + Date.now()
+  },
+  images: {
+    unoptimized: true
   }
 }
 
