@@ -1,4 +1,4 @@
-Copy/** @type {import('next').NextConfig} */
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   typescript: {
@@ -6,11 +6,6 @@ const nextConfig = {
   },
   eslint: {
     ignoreDuringBuilds: true
-  },
-  experimental: {
-    forceSwcTransforms: true,
-    skipTrailingSlashRedirect: true,
-    skipMiddlewareUrlNormalize: true
   }
 }
 
