@@ -35,10 +35,10 @@ export default function NewProductPage() {
     
     try {
       if (mode === 'edit' && productId) {
-        await updateProduct(productId, formData)
+        await updateProduct.mutateAsync({ id: productId, data: formData })
         toast.success('Produto atualizado com sucesso!')
       } else {
-        await createProduct(formData)
+        await createProduct.mutateAsync(formData)
         toast.success('Produto criado com sucesso!')
       }
       router.push('/products')
@@ -94,7 +94,7 @@ export default function NewProductPage() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Visão do Produto</label>
                 <Textarea
-                  value={formData.vision}
+                  value={formData.vision ?? ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, vision: e.target.value }))}
                   placeholder="Descreva a visão do produto"
                   className="min-h-[100px]"
@@ -103,7 +103,7 @@ export default function NewProductPage() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Público-alvo</label>
                 <Textarea
-                  value={formData.target_audience}
+                  value={formData.target_audience ?? ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, target_audience: e.target.value }))}
                   placeholder="Descreva o público-alvo do produto"
                   className="min-h-[100px]"
