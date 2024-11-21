@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,32 +10,33 @@ import { useProducts } from '@/hooks/use-products'
 import { toast } from 'sonner'
 import { IProduct } from '@/types/product'
 
-export default function NewProductPage() {
+interface Props {
+  mode?: 'create' | 'edit'
+  initialData?: IProduct
+}
+
+function NewProductPageContent({ mode = 'create', initialData }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const productId = searchParams.get('id')
-  const mode = productId ? 'edit' : 'create'
-  
+  const duplicateId = searchParams.get('duplicate')
   const { createProduct, updateProduct, products } = useProducts()
-  const existingProduct = productId ? products.find(p => p.id === productId) : undefined
-
   const [formData, setFormData] = useState<Partial<IProduct>>({
-    name: existingProduct?.name || '',
-    description: existingProduct?.description || '',
-    status: existingProduct?.status || 'development',
-    vision: existingProduct?.vision || '',
-    target_audience: existingProduct?.target_audience || '',
-    product_metrics: existingProduct?.product_metrics || [],
-    product_risks: existingProduct?.product_risks || [],
-    tags: existingProduct?.tags || []
+    name: initialData?.name || '',
+    description: initialData?.description || '',
+    status: initialData?.status || 'development',
+    vision: initialData?.vision || '',
+    target_audience: initialData?.target_audience || '',
+    product_metrics: initialData?.product_metrics || [],
+    product_risks: initialData?.product_risks || [],
+    tags: initialData?.tags || []
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     try {
-      if (mode === 'edit' && productId) {
-        await updateProduct.mutateAsync({ id: productId, data: formData })
+      if (mode === 'edit' && initialData) {
+        await updateProduct.mutateAsync({ id: initialData.id, data: formData })
         toast.success('Produto atualizado com sucesso!')
       } else {
         await createProduct.mutateAsync(formData)
@@ -130,5 +131,17 @@ export default function NewProductPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function NewProductPage(props: Props) {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-full">
+        <div className="text-[var(--color-text-secondary)]">Carregando...</div>
+      </div>
+    }>
+      <NewProductPageContent {...props} />
+    </Suspense>
   )
 }
