@@ -210,7 +210,7 @@ export function StoryFilters({ onFiltersChange, features }: StoryFiltersProps) {
 
         <DropdownMenuSeparator />
 
-        {/* Critérios de Aceitação */}
+        {/* Crit��rios de Aceitação */}
         <div className="p-2">
           <h4 className="text-sm font-medium mb-2">Critérios de Aceitação</h4>
           <div className="space-y-2">

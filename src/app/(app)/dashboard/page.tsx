@@ -3,136 +3,122 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { 
-  Search,
-  Plus,
   Calendar,
   Users,
   Target,
-  ArrowUp,
   BarChart3,
-  Bell,
-  Filter
+  HelpCircle,
+  Settings2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { WelcomeGuide } from '@/components/onboarding/welcome-guide'
+import { WelcomeGuide } from '@/components/dashboard/welcome-guide'
 import { ProductInsights } from '@/components/dashboard/product-insights'
+import { UserGuideDialog } from '@/components/guide/user-guide-dialog'
+import { DashboardConfig } from '@/components/dashboard/dashboard-config'
+import { useUserPreferences } from '@/hooks/use-user-preferences'
+
+interface DashboardPreferences {
+  showWelcomeGuide: boolean
+  completedSteps: string[]
+  enabledWidgets: string[]
+}
 
 export default function DashboardPage() {
-  const [searchTerm, setSearchTerm] = useState('')
+  const [showGuide, setShowGuide] = useState(false)
+  const [showConfig, setShowConfig] = useState(false)
+
+  // Preferências do usuário
+  const { preferences, updatePreferences } = useUserPreferences<DashboardPreferences>(
+    'dashboard-preferences',
+    {
+      showWelcomeGuide: true,
+      completedSteps: [],
+      enabledWidgets: [
+        'quick-metrics',
+        'recent-activities',
+        'product-insights',
+        'priority-features'
+      ]
+    }
+  )
 
   // Métricas rápidas
   const metrics = [
     {
+      icon: Target,
       label: 'Produtos Ativos',
       value: '12',
       change: '+2',
       trend: 'up',
-      icon: Target,
       color: 'text-emerald-500',
       bgColor: 'bg-emerald-500/8'
     },
     {
+      icon: Calendar,
       label: 'Sprints Ativos',
       value: '3',
       change: '0',
       trend: 'neutral',
-      icon: Calendar,
       color: 'text-blue-500',
       bgColor: 'bg-blue-500/8'
     },
     {
+      icon: Users,
       label: 'Time',
       value: '8',
       change: '+1',
       trend: 'up',
-      icon: Users,
       color: 'text-violet-500',
       bgColor: 'bg-violet-500/8'
     },
     {
+      icon: BarChart3,
       label: 'Métricas',
       value: '24',
       change: '+5',
       trend: 'up',
-      icon: BarChart3,
       color: 'text-amber-500',
       bgColor: 'bg-amber-500/8'
     }
   ]
 
   return (
-    <div className="flex-1 space-y-6">
-      {/* Cabeçalho Moderno */}
-      <div className="flex flex-col gap-6">
-        {/* Linha Superior */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            {/* Título e Data */}
-            <div>
-              <h1 className="text-2xl font-semibold text-[var(--color-text-primary)]">
-                Dashboard
-              </h1>
-              <p className="text-sm text-[var(--color-text-secondary)]">
-                {format(new Date(), "EEEE',' dd 'de' MMMM", { locale: ptBR })}
-              </p>
-            </div>
-
-            {/* Separador */}
-            <div className="h-8 w-px bg-[var(--color-border)]" />
-
-            {/* Ações Rápidas */}
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-2"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Novo Produto
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-2"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Nova Métrica
-              </Button>
-            </div>
-          </div>
-
-          {/* Notificações e Busca */}
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
-              <Input
-                placeholder="Buscar..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 h-8 w-[200px] bg-transparent"
-              />
-            </div>
+    <div className="h-full flex flex-col -m-6">
+      {/* Cabeçalho */}
+      <div className="bg-[var(--color-background-primary)] border-b border-[var(--color-border)]">
+        <div className="h-14 px-4 flex items-center justify-between">
+          <h1 className="text-sm font-medium">Dashboard</h1>
+          
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowConfig(true)}
+              className="h-8"
+            >
+              <Settings2 className="w-3.5 h-3.5 mr-2" />
+              Configurar Dashboard
+            </Button>
 
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              className="relative h-8 w-8 p-0"
+              onClick={() => setShowGuide(true)}
+              className="h-8"
             >
-              <Bell className="w-4 h-4" />
-              <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full" />
+              <HelpCircle className="w-3.5 h-3.5 mr-2" />
+              Guia do Usuário
             </Button>
           </div>
         </div>
+      </div>
 
-        {/* Métricas Rápidas */}
-        <div className="grid grid-cols-4 gap-4">
+      {/* Métricas Rápidas */}
+      {preferences?.enabledWidgets.includes('quick-metrics') && (
+        <div className="grid grid-cols-4 gap-4 p-6">
           {metrics.map((metric) => (
             <Card key={metric.label} className="p-4 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between">
@@ -167,23 +153,71 @@ export default function DashboardPage() {
             </Card>
           ))}
         </div>
-      </div>
+      )}
 
       {/* Guia de Boas-vindas */}
-      <WelcomeGuide />
+      {preferences?.showWelcomeGuide && (
+        <div className="px-6">
+          <WelcomeGuide 
+            completedSteps={preferences.completedSteps}
+            onStepComplete={async (stepId) => {
+              const newSteps = [...(preferences.completedSteps || []), stepId]
+              await updatePreferences({
+                ...preferences,
+                completedSteps: newSteps
+              })
+            }}
+            onHide={async () => {
+              await updatePreferences({
+                ...preferences,
+                showWelcomeGuide: false
+              })
+            }}
+          />
+        </div>
+      )}
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-3 gap-6 p-6">
         {/* Coluna Principal */}
         <div className="col-span-2 space-y-6">
-          {/* Resto do conteúdo do dashboard */}
+          {/* Widgets habilitados */}
+          {preferences?.enabledWidgets.includes('recent-activities') && (
+            <Card className="p-4">
+              <h2 className="text-sm font-medium mb-4">Atividades Recentes</h2>
+              {/* Conteúdo do widget */}
+            </Card>
+          )}
+
+          {preferences?.enabledWidgets.includes('priority-features') && (
+            <Card className="p-4">
+              <h2 className="text-sm font-medium mb-4">Features Prioritárias</h2>
+              {/* Conteúdo do widget */}
+            </Card>
+          )}
         </div>
 
         {/* Coluna Lateral */}
         <div className="space-y-6">
           {/* Insights do Product Oversee */}
-          <ProductInsights />
+          {preferences?.enabledWidgets.includes('product-insights') && (
+            <ProductInsights />
+          )}
         </div>
       </div>
+
+      {/* Dialog do Guia */}
+      <UserGuideDialog 
+        open={showGuide} 
+        onOpenChange={setShowGuide} 
+      />
+
+      {/* Dialog de Configurações */}
+      <DashboardConfig
+        open={showConfig}
+        onOpenChange={setShowConfig}
+        preferences={preferences}
+        onUpdatePreferences={updatePreferences}
+      />
     </div>
   )
 } 

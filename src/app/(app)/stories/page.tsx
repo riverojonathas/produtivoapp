@@ -835,6 +835,26 @@ export default function StoriesPage() {
           <div className="flex items-center justify-center h-full">
             <div className="text-[var(--color-text-secondary)]">Carregando...</div>
           </div>
+        ) : stories.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <div className="mb-4 p-4 rounded-full bg-[var(--color-background-subtle)]">
+              <BookOpen className="w-8 h-8 text-[var(--color-primary)]" />
+            </div>
+            <h3 className="text-lg font-medium mb-2">
+              Nenhuma história cadastrada
+            </h3>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-6 max-w-[500px]">
+              Histórias de usuário ajudam a descrever funcionalidades do ponto de vista do usuário. 
+              Comece criando sua primeira história.
+            </p>
+            <Button
+              onClick={() => router.push('/stories/new')}
+              className="bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)]"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Criar Primeira História
+            </Button>
+          </div>
         ) : filteredStories.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="text-sm text-[var(--color-text-secondary)]">

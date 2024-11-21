@@ -9,16 +9,8 @@ interface UseUserPreferencesReturn<T> {
   updatePreferences: (newPreferences: T) => Promise<void>
 }
 
-interface UserSettings {
-  id?: string
-  user_id: string
-  settings: Record<string, unknown>
-  created_at?: string
-  updated_at?: string
-}
-
 export function useUserPreferences<T>(
-  type: string,
+  key: string,
   defaultValue: T
 ): UseUserPreferencesReturn<T> {
   const [preferences, setPreferences] = useState<T | null>(null)
@@ -37,20 +29,32 @@ export function useUserPreferences<T>(
           .eq('user_id', user.id)
           .maybeSingle()
 
-        if (error && error.code !== 'PGRST116') {
+        if (error) {
+          console.error('Erro ao carregar preferências:', error)
           throw error
         }
 
         if (!data) {
           // Criar configurações iniciais
-          const initialSettings: UserSettings = {
-            user_id: user.id,
-            settings: { [type]: defaultValue }
-          }
-
           const { error: insertError } = await supabase
             .from('user_settings')
-            .insert(initialSettings)
+            .insert({
+              user_id: user.id,
+              density: 'comfortable',
+              language: 'pt-BR',
+              timezone: 'America/Sao_Paulo',
+              theme: 'light',
+              accent_color: 'blue',
+              sidebar_collapsed: false,
+              notifications_enabled: true,
+              email_notifications: true,
+              date_format: 'dd/MM/yyyy',
+              start_page: '/dashboard',
+              items_per_page: 10,
+              settings: {
+                [key]: defaultValue
+              }
+            })
 
           if (insertError) throw insertError
 
@@ -58,14 +62,14 @@ export function useUserPreferences<T>(
         } else {
           // Usar configurações existentes ou valor padrão
           const settings = data.settings || {}
-          setPreferences(settings[type] || defaultValue)
+          setPreferences(settings[key] || defaultValue)
 
-          // Se não existir configuração para este tipo, atualizar com o valor padrão
-          if (!settings[type]) {
+          // Se não existir configuração para esta chave, atualizar com o valor padrão
+          if (!settings[key]) {
             const { error: updateError } = await supabase
               .from('user_settings')
               .update({
-                settings: { ...settings, [type]: defaultValue }
+                settings: { ...settings, [key]: defaultValue }
               })
               .eq('user_id', user.id)
 
@@ -81,7 +85,7 @@ export function useUserPreferences<T>(
     }
 
     loadPreferences()
-  }, [type, defaultValue, supabase])
+  }, [key, defaultValue, supabase])
 
   const updatePreferences = async (newPreferences: T) => {
     try {
@@ -97,25 +101,19 @@ export function useUserPreferences<T>(
 
       // Preparar dados para atualização
       const updatedSettings = {
-        user_id: user.id,
         settings: {
           ...(currentData?.settings || {}),
-          [type]: newPreferences
-        },
-        updated_at: new Date().toISOString()
+          [key]: newPreferences
+        }
       }
 
-      // Atualizar ou inserir configurações
+      // Atualizar configurações
       const { error } = await supabase
         .from('user_settings')
-        .upsert(updatedSettings, {
-          onConflict: 'user_id'
-        })
+        .update(updatedSettings)
+        .eq('user_id', user.id)
 
-      if (error) {
-        console.error('Erro detalhado:', error)
-        throw error
-      }
+      if (error) throw error
 
       setPreferences(newPreferences)
     } catch (error) {

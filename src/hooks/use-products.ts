@@ -160,21 +160,53 @@ export function useProducts(id?: string): UseProductsReturn {
     mutateAsync: async (id: string) => {
       setIsPending(true)
       try {
-        const { error } = await supabase
+        // Primeiro excluir os registros relacionados
+        const { error: risksError } = await supabase
+          .from('product_risks')
+          .delete()
+          .eq('product_id', id)
+
+        if (risksError) {
+          console.error('Erro ao excluir riscos:', risksError)
+          throw new Error('Erro ao excluir riscos do produto')
+        }
+
+        const { error: metricsError } = await supabase
+          .from('product_metrics')
+          .delete()
+          .eq('product_id', id)
+
+        if (metricsError) {
+          console.error('Erro ao excluir métricas:', metricsError)
+          throw new Error('Erro ao excluir métricas do produto')
+        }
+
+        const { error: tagsError } = await supabase
+          .from('product_tags')
+          .delete()
+          .eq('product_id', id)
+
+        if (tagsError) {
+          console.error('Erro ao excluir tags:', tagsError)
+          throw new Error('Erro ao excluir tags do produto')
+        }
+
+        // Agora podemos excluir o produto
+        const { error: productError } = await supabase
           .from('products')
           .delete()
           .eq('id', id)
 
-        if (error) {
-          console.error('Erro ao excluir produto:', error)
-          throw new Error(error.message || 'Erro ao excluir produto')
+        if (productError) {
+          console.error('Erro ao excluir produto:', productError)
+          throw new Error(productError.message || 'Erro ao excluir produto')
         }
 
         // Remover o produto da lista local
         setProducts(prev => prev.filter(p => p.id !== id))
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Erro ao excluir produto'
-        console.error('Erro ao excluir produto:', message)
+        console.error('Erro ao excluir produto:', error)
         throw new Error(message)
       } finally {
         setIsPending(false)

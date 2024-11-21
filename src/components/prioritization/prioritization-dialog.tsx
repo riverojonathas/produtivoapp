@@ -6,15 +6,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Feature } from "@/types/product"
+import { IFeature } from "@/types/feature"
+import { useState } from "react"
 import { useFeatures } from "@/hooks/use-features"
 import { toast } from "sonner"
-import { useState } from "react"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Calculator, Target, ArrowUp, Gauge, Clock } from "lucide-react"
+import { Slider } from "@/components/ui/slider"
+import { cn } from "@/lib/utils"
+import { 
+  Calculator, 
+  Target, 
+  Users, 
+  ArrowUp, 
+  Gauge, 
+  Clock,
+  Sparkles
+} from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -22,15 +29,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 
 interface PrioritizationDialogProps {
-  feature: Feature
+  feature: IFeature
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-export function PrioritizationDialog({ feature, open, onOpenChange }: PrioritizationDialogProps) {
-  const { createFeaturePrioritization } = useFeatures()
+export function PrioritizationDialog({ 
+  feature, 
+  open, 
+  onOpenChange 
+}: PrioritizationDialogProps) {
+  const { updateFeature } = useFeatures()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [riceValues, setRiceValues] = useState({
     reach: feature.rice_reach || 0,
@@ -48,25 +61,16 @@ export function PrioritizationDialog({ feature, open, onOpenChange }: Prioritiza
   const handleSave = async () => {
     try {
       setIsSubmitting(true)
-
-      // Salvar priorização RICE
-      if (Object.values(riceValues).some(value => value > 0)) {
-        await createFeaturePrioritization.mutateAsync({
-          feature_id: feature.id,
-          method: 'rice',
-          ...riceValues
-        })
-      }
-
-      // Salvar priorização MoSCoW
-      if (moscowPriority) {
-        await createFeaturePrioritization.mutateAsync({
-          feature_id: feature.id,
-          method: 'moscow',
-          moscow_priority: moscowPriority as 'must' | 'should' | 'could' | 'wont'
-        })
-      }
-
+      await updateFeature.mutateAsync({
+        id: feature.id,
+        data: {
+          rice_reach: riceValues.reach,
+          rice_impact: riceValues.impact,
+          rice_confidence: riceValues.confidence,
+          rice_effort: riceValues.effort,
+          moscow_priority: moscowPriority || undefined
+        }
+      })
       toast.success('Priorização atualizada com sucesso')
       onOpenChange(false)
     } catch (error) {
@@ -88,104 +92,147 @@ export function PrioritizationDialog({ feature, open, onOpenChange }: Prioritiza
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* RICE Score */}
-          <Card className="p-4">
-            <div className="flex items-center justify-between mb-4">
+          {/* RICE Score Card */}
+          <Card className="p-4 relative overflow-hidden">
+            <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-sm font-medium">Framework RICE</h3>
+                <h3 className="text-sm font-medium flex items-center gap-2">
+                  <Target className="w-4 h-4 text-[var(--color-primary)]" />
+                  Framework RICE
+                </h3>
                 <p className="text-xs text-[var(--color-text-secondary)] mt-1">
-                  Priorização baseada em Reach, Impact, Confidence e Effort
+                  Priorização baseada em dados quantitativos
                 </p>
               </div>
               <Badge 
                 variant="secondary" 
-                className="text-lg font-semibold"
+                className={cn(
+                  "text-lg font-semibold",
+                  parseFloat(riceScore) >= 100 ? "bg-emerald-100 text-emerald-700" :
+                  parseFloat(riceScore) >= 50 ? "bg-blue-100 text-blue-700" :
+                  parseFloat(riceScore) >= 25 ? "bg-amber-100 text-amber-700" :
+                  "bg-red-100 text-red-700"
+                )}
               >
                 {riceScore}
               </Badge>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-6">
+              {/* Reach */}
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Target className="w-4 h-4 text-[var(--color-text-secondary)]" />
-                  <label className="text-sm font-medium">Reach</label>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-[var(--color-text-secondary)]" />
+                    <label className="text-sm font-medium">Reach</label>
+                  </div>
+                  <span className="text-sm font-medium">{riceValues.reach}</span>
                 </div>
-                <Input
-                  type="number"
-                  min="0"
-                  value={riceValues.reach}
-                  onChange={(e) => setRiceValues(prev => ({ 
-                    ...prev, 
-                    reach: parseInt(e.target.value) || 0 
-                  }))}
-                  placeholder="Número de usuários impactados"
+                <Slider
+                  value={[riceValues.reach]}
+                  onValueChange={([value]) => setRiceValues(prev => ({ ...prev, reach: value }))}
+                  max={1000}
+                  step={10}
+                  className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4"
                 />
+                <p className="text-xs text-[var(--color-text-secondary)]">
+                  Número estimado de usuários impactados por trimestre
+                </p>
               </div>
 
+              {/* Impact */}
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <ArrowUp className="w-4 h-4 text-[var(--color-text-secondary)]" />
-                  <label className="text-sm font-medium">Impact</label>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ArrowUp className="w-4 h-4 text-[var(--color-text-secondary)]" />
+                    <label className="text-sm font-medium">Impact</label>
+                  </div>
+                  <span className="text-sm font-medium">{riceValues.impact}</span>
                 </div>
-                <Input
-                  type="number"
-                  min="0"
-                  max="3"
-                  value={riceValues.impact}
-                  onChange={(e) => setRiceValues(prev => ({ 
-                    ...prev, 
-                    impact: parseInt(e.target.value) || 0 
-                  }))}
-                  placeholder="Impacto (0-3)"
-                />
+                <div className="flex gap-2">
+                  {[0.25, 0.5, 1, 2, 3].map(value => (
+                    <Button
+                      key={value}
+                      variant={riceValues.impact === value ? "default" : "outline"}
+                      className={cn(
+                        "flex-1 h-8",
+                        riceValues.impact === value && "bg-[var(--color-primary)] text-white"
+                      )}
+                      onClick={() => setRiceValues(prev => ({ ...prev, impact: value }))}
+                    >
+                      {value}
+                    </Button>
+                  ))}
+                </div>
+                <p className="text-xs text-[var(--color-text-secondary)]">
+                  Impacto por usuário (0.25 = Mínimo, 3 = Massivo)
+                </p>
               </div>
 
+              {/* Confidence */}
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Gauge className="w-4 h-4 text-[var(--color-text-secondary)]" />
-                  <label className="text-sm font-medium">Confidence</label>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Gauge className="w-4 h-4 text-[var(--color-text-secondary)]" />
+                    <label className="text-sm font-medium">Confidence</label>
+                  </div>
+                  <span className="text-sm font-medium">{riceValues.confidence}%</span>
                 </div>
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={riceValues.confidence}
-                  onChange={(e) => setRiceValues(prev => ({ 
-                    ...prev, 
-                    confidence: parseInt(e.target.value) || 0 
-                  }))}
-                  placeholder="Confiança (0-100%)"
+                <Slider
+                  value={[riceValues.confidence]}
+                  onValueChange={([value]) => setRiceValues(prev => ({ ...prev, confidence: value }))}
+                  max={100}
+                  step={5}
+                  className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4"
                 />
+                <p className="text-xs text-[var(--color-text-secondary)]">
+                  Nível de confiança na estimativa (0-100%)
+                </p>
               </div>
 
+              {/* Effort */}
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-[var(--color-text-secondary)]" />
-                  <label className="text-sm font-medium">Effort</label>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-[var(--color-text-secondary)]" />
+                    <label className="text-sm font-medium">Effort</label>
+                  </div>
+                  <span className="text-sm font-medium">{riceValues.effort}</span>
                 </div>
-                <Input
-                  type="number"
-                  min="0.1"
-                  step="0.1"
-                  value={riceValues.effort}
-                  onChange={(e) => setRiceValues(prev => ({ 
-                    ...prev, 
-                    effort: parseFloat(e.target.value) || 0 
-                  }))}
-                  placeholder="Esforço em pessoa-mês"
-                />
+                <div className="flex gap-2">
+                  {[0.5, 1, 2, 3, 5, 8, 13].map(value => (
+                    <Button
+                      key={value}
+                      variant={riceValues.effort === value ? "default" : "outline"}
+                      className={cn(
+                        "flex-1 h-8",
+                        riceValues.effort === value && "bg-[var(--color-primary)] text-white"
+                      )}
+                      onClick={() => setRiceValues(prev => ({ ...prev, effort: value }))}
+                    >
+                      {value}
+                    </Button>
+                  ))}
+                </div>
+                <p className="text-xs text-[var(--color-text-secondary)]">
+                  Esforço estimado em pessoa-mês
+                </p>
               </div>
             </div>
           </Card>
 
-          {/* MoSCoW */}
+          {/* MoSCoW Card */}
           <Card className="p-4">
-            <div className="mb-4">
-              <h3 className="text-sm font-medium">Priorização MoSCoW</h3>
-              <p className="text-xs text-[var(--color-text-secondary)] mt-1">
-                Must have, Should have, Could have, Won't have
-              </p>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-sm font-medium flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-[var(--color-primary)]" />
+                  Priorização MoSCoW
+                </h3>
+                <p className="text-xs text-[var(--color-text-secondary)] mt-1">
+                  Classificação baseada em importância
+                </p>
+              </div>
             </div>
 
             <Select
@@ -196,10 +243,46 @@ export function PrioritizationDialog({ feature, open, onOpenChange }: Prioritiza
                 <SelectValue placeholder="Selecione a prioridade MoSCoW" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="must">Must Have (Deve ter)</SelectItem>
-                <SelectItem value="should">Should Have (Deveria ter)</SelectItem>
-                <SelectItem value="could">Could Have (Poderia ter)</SelectItem>
-                <SelectItem value="wont">Won't Have (Não terá)</SelectItem>
+                <SelectItem value="must">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="bg-red-100 text-red-700">
+                      Must Have
+                    </Badge>
+                    <span className="text-xs text-[var(--color-text-secondary)]">
+                      Essencial para o produto
+                    </span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="should">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="bg-amber-100 text-amber-700">
+                      Should Have
+                    </Badge>
+                    <span className="text-xs text-[var(--color-text-secondary)]">
+                      Importante mas não crítico
+                    </span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="could">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                      Could Have
+                    </Badge>
+                    <span className="text-xs text-[var(--color-text-secondary)]">
+                      Desejável se houver recursos
+                    </span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="wont">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="bg-gray-100 text-gray-700">
+                      Won't Have
+                    </Badge>
+                    <span className="text-xs text-[var(--color-text-secondary)]">
+                      Não será implementado agora
+                    </span>
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
           </Card>
@@ -216,6 +299,7 @@ export function PrioritizationDialog({ feature, open, onOpenChange }: Prioritiza
           <Button
             onClick={handleSave}
             disabled={isSubmitting}
+            className="bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)]"
           >
             {isSubmitting ? 'Salvando...' : 'Salvar'}
           </Button>

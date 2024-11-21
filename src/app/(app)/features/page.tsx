@@ -24,7 +24,8 @@ import {
   BarChart3,
   InboxIcon,
   PlayCircle,
-  AlertOctagon
+  AlertOctagon,
+  ListTodo
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
@@ -824,13 +825,33 @@ export default function FeaturesPage() {
           <div className="flex items-center justify-center h-full">
             <div className="text-[var(--color-text-secondary)]">Carregando...</div>
           </div>
+        ) : features.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <div className="mb-4 p-4 rounded-full bg-[var(--color-background-subtle)]">
+              <ListTodo className="w-8 h-8 text-[var(--color-primary)]" />
+            </div>
+            <h3 className="text-lg font-medium mb-2">
+              Nenhuma feature cadastrada
+            </h3>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-6 max-w-[500px]">
+              Features são funcionalidades que agregam valor ao seu produto. 
+              Comece criando sua primeira feature.
+            </p>
+            <Button
+              onClick={() => router.push('/features/new')}
+              className="bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)]"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Criar Primeira Feature
+            </Button>
+          </div>
         ) : filteredFeatures.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="text-sm text-[var(--color-text-secondary)]">
-              {searchTerm ? 'Nenhuma feature encontrada' : 'Nenhuma feature cadastrada'}
+              Nenhuma feature encontrada
             </div>
             <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
-              {searchTerm ? 'Tente buscar com outros termos' : 'Comece criando uma nova feature'}
+              Tente buscar com outros termos
             </p>
           </div>
         ) : (

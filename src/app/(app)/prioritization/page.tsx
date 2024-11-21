@@ -1,27 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useFeatures } from '@/hooks/use-features'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Search,
-  LayoutGrid,
-  List,
-  Columns,
-  Target,
-  ArrowUp,
-  ArrowDown,
-  Gauge,
-  Sparkles
-} from 'lucide-react'
+import { Search, LayoutGrid, Target, ListChecks, BarChart3, GitBranch, HelpCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useFeatures } from '@/hooks/use-features'
 import { PriorityMatrix } from '@/components/prioritization/priority-matrix'
 import { RICEScore } from '@/components/prioritization/rice-score'
 import { MoscowBoard } from '@/components/prioritization/moscow-board'
 import { PrioritizedList } from '@/components/prioritization/prioritized-list'
 import { PrioritizationDialog } from '@/components/prioritization/prioritization-dialog'
+import { IFeature } from '@/types/feature'
+import { PrioritizationHelp } from '@/components/prioritization/prioritization-help'
 
 type ViewMode = 'matrix' | 'rice' | 'moscow' | 'list'
 
@@ -29,49 +20,38 @@ export default function PrioritizationPage() {
   const { features = [], isLoading } = useFeatures()
   const [searchTerm, setSearchTerm] = useState('')
   const [viewMode, setViewMode] = useState<ViewMode>('matrix')
-  const [selectedFeature, setSelectedFeature] = useState<string | null>(null)
-  const router = useRouter()
+  const [selectedFeature, setSelectedFeature] = useState<IFeature | null>(null)
+  const [showHelp, setShowHelp] = useState(false)
 
   // Métricas rápidas
   const items = [
     {
       icon: Target,
-      label: 'Total',
-      value: features.length,
-      color: 'text-violet-500',
-      bgColor: 'bg-violet-500/8 dark:bg-violet-500/10'
-    },
-    {
-      icon: ArrowUp,
-      label: 'Alta Prioridade',
-      value: features.filter(f => f.priority === 'high' || f.priority === 'urgent').length,
-      color: 'text-red-500',
-      bgColor: 'bg-red-500/8 dark:bg-red-500/10'
-    },
-    {
-      icon: Gauge,
       label: 'RICE Score',
       value: features.filter(f => f.rice_score).length,
       color: 'text-blue-500',
-      bgColor: 'bg-blue-500/8 dark:bg-blue-500/10'
+      bgColor: 'bg-blue-500/8'
     },
     {
-      icon: Sparkles,
+      icon: ListChecks,
       label: 'MoSCoW',
       value: features.filter(f => f.moscow_priority).length,
       color: 'text-amber-500',
-      bgColor: 'bg-amber-500/8 dark:bg-amber-500/10'
+      bgColor: 'bg-amber-500/8'
+    },
+    {
+      icon: GitBranch,
+      label: 'Dependências',
+      value: features.filter(f => f.dependencies?.length).length,
+      color: 'text-violet-500',
+      bgColor: 'bg-violet-500/8'
     }
   ]
 
   const filteredFeatures = features.filter(feature =>
     feature.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    feature.description.what.toLowerCase().includes(searchTerm.toLowerCase())
+    feature.description?.what?.toLowerCase().includes(searchTerm.toLowerCase())
   )
-
-  const handleFeatureClick = (feature: any) => {
-    setSelectedFeature(feature.id)
-  }
 
   const renderContent = () => {
     if (isLoading) {
@@ -97,7 +77,7 @@ export default function PrioritizationPage() {
 
     switch (viewMode) {
       case 'matrix':
-        return <PriorityMatrix features={filteredFeatures} onFeatureClick={handleFeatureClick} />
+        return <PriorityMatrix features={filteredFeatures} onFeatureClick={setSelectedFeature} />
       case 'rice':
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -105,15 +85,15 @@ export default function PrioritizationPage() {
               <RICEScore 
                 key={feature.id} 
                 feature={feature} 
-                onFeatureClick={handleFeatureClick} 
+                onFeatureClick={setSelectedFeature} 
               />
             ))}
           </div>
         )
       case 'moscow':
-        return <MoscowBoard features={filteredFeatures} onFeatureClick={handleFeatureClick} />
+        return <MoscowBoard features={filteredFeatures} onFeatureClick={setSelectedFeature} />
       case 'list':
-        return <PrioritizedList features={filteredFeatures} onFeatureClick={handleFeatureClick} />
+        return <PrioritizedList features={filteredFeatures} onFeatureClick={setSelectedFeature} />
       default:
         return null
     }
@@ -145,7 +125,7 @@ export default function PrioritizationPage() {
                   )}
                 >
                   <div className={cn("p-1 rounded", item.bgColor)}>
-                    <item.icon className={cn("w-3 h-3", item.color)} />
+                    <item.icon className={cn("w-3.5 h-3.5", item.color)} />
                   </div>
                   <div>
                     <p className="text-[10px] text-[var(--color-text-secondary)]">
@@ -204,7 +184,7 @@ export default function PrioritizationPage() {
                   viewMode === 'moscow' && "text-[var(--color-primary)]"
                 )}
               >
-                <Sparkles className="w-4 h-4" />
+                <ListChecks className="w-4 h-4" />
               </Button>
               <Button
                 variant="ghost"
@@ -215,9 +195,20 @@ export default function PrioritizationPage() {
                   viewMode === 'list' && "text-[var(--color-primary)]"
                 )}
               >
-                <List className="w-4 h-4" />
+                <BarChart3 className="w-4 h-4" />
               </Button>
             </div>
+
+            {/* Botão de Ajuda */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowHelp(true)}
+              className="h-8"
+            >
+              <HelpCircle className="w-3.5 h-3.5 mr-2" />
+              Como Priorizar
+            </Button>
           </div>
         </div>
       </div>
@@ -230,11 +221,17 @@ export default function PrioritizationPage() {
       {/* Dialog de Priorização */}
       {selectedFeature && (
         <PrioritizationDialog
-          feature={features.find(f => f.id === selectedFeature)!}
+          feature={selectedFeature}
           open={!!selectedFeature}
           onOpenChange={(open) => !open && setSelectedFeature(null)}
         />
       )}
+
+      {/* Dialog de Ajuda */}
+      <PrioritizationHelp 
+        open={showHelp} 
+        onOpenChange={setShowHelp} 
+      />
     </div>
   )
 } 

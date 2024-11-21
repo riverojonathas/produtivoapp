@@ -34,6 +34,7 @@ export interface IFeature {
   rice_impact?: number
   rice_confidence?: number
   rice_effort?: number
+  rice_score?: number
   moscow_priority?: 'must' | 'should' | 'could' | 'wont'
   dependent_features?: {
     id: string

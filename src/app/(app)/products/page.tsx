@@ -20,7 +20,8 @@ import {
   BarChart3,
   Target, 
   Lightbulb, 
-  ArrowUp
+  ArrowUp,
+  Package
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { format, subDays } from 'date-fns'
@@ -604,13 +605,33 @@ export default function ProductsPage() {
           <div className="flex items-center justify-center h-full">
             <div className="text-[var(--color-text-secondary)]">Carregando...</div>
           </div>
+        ) : products.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <div className="mb-4 p-4 rounded-full bg-[var(--color-background-subtle)]">
+              <Package className="w-8 h-8 text-[var(--color-primary)]" />
+            </div>
+            <h3 className="text-lg font-medium mb-2">
+              Nenhum produto cadastrado
+            </h3>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-6 max-w-[500px]">
+              Produtos são a base do seu trabalho. Comece criando seu primeiro produto 
+              e defina sua visão, métricas e objetivos.
+            </p>
+            <Button
+              onClick={() => router.push('/products/new')}
+              className="bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)]"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Criar Primeiro Produto
+            </Button>
+          </div>
         ) : filteredProducts.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="text-sm text-[var(--color-text-secondary)]">
-              {searchTerm ? 'Nenhum produto encontrado' : 'Nenhum produto cadastrado'}
+              Nenhum produto encontrado
             </div>
             <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
-              {searchTerm ? 'Tente buscar com outros termos' : 'Comece criando um novo produto'}
+              Tente buscar com outros termos
             </p>
           </div>
         ) : (
