@@ -1,14 +1,16 @@
-/** @type {import('next').NextConfig} */
+Copy/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  env: {
-    PORT: process.env.PORT?.toString() || '3000'
+  typescript: {
+    ignoreBuildErrors: true
   },
   eslint: {
     ignoreDuringBuilds: true
   },
-  typescript: {
-    ignoreBuildErrors: true
+  experimental: {
+    forceSwcTransforms: true,
+    skipTrailingSlashRedirect: true,
+    skipMiddlewareUrlNormalize: true
   }
 }
 
