@@ -60,8 +60,8 @@ export function useFeatures(id?: string): UseFeatureReturn {
 
       const transformedData = data?.map(feature => ({
         ...feature,
-        dependencies: feature.feature_dependencies?.map(d => d.dependent) || [],
-        dependent_features: feature.dependent_features?.map(d => d.feature) || []
+        dependencies: feature.feature_dependencies?.map((d: { dependent: IFeature }) => d.dependent) || [],
+        dependent_features: feature.dependent_features?.map((d: { feature: IFeature }) => d.feature) || []
       }))
 
       setFeatures(transformedData || [])

@@ -66,16 +66,30 @@ export function useStories(id?: string): UseStoriesReturn {
       const transformedData = data?.map(story => ({
         ...story,
         related_stories: [
-          ...(story.story_relationships?.map(rel => ({
+          ...(story.story_relationships?.map((rel: { 
+            related_story: { 
+              id: string;
+              title: string;
+              status: string;
+            };
+            relationship_type: string;
+          }) => ({
             id: rel.related_story.id,
-            title: rel.related_story.title,
+            title: rel.related_story.title, 
             status: rel.related_story.status,
             relationship_type: rel.relationship_type
           })) || []),
-          ...(story.related_to?.map(rel => ({
+          ...(story.related_to?.map((rel: {
+            story: {
+              id: string;
+              title: string;
+              status: string;
+            };
+            relationship_type: string;
+          }) => ({
             id: rel.story.id,
             title: rel.story.title,
-            status: rel.story.status,
+            status: rel.story.status, 
             relationship_type: rel.relationship_type === 'blocks' ? 'blocked_by' :
               rel.relationship_type === 'blocked_by' ? 'blocks' :
               rel.relationship_type
