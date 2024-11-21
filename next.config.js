@@ -8,16 +8,7 @@ const nextConfig = {
     ignoreDuringBuilds: true
   },
   experimental: {
-    forceSwcTransforms: true,
-    serverActions: true
-  },
-  staticPageGenerationTimeout: 180,
-  pageExtensions: ['ts', 'tsx', 'js', 'jsx'],
-  distDir: '.next',
-  generateEtags: false,
-  poweredByHeader: false,
-  compiler: {
-    removeConsole: false
+    missingSuspenseWithCSRBailout: false
   }
 }
 
