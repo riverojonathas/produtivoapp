@@ -4,7 +4,8 @@ const nextConfig = {
     serverActions: {
       allowedOrigins: ['localhost:3000', 'vercel.app']
     },
-    missingSuspenseWithCSRBailout: false
+    missingSuspenseWithCSRBailout: false,
+    appDir: true
   },
   typescript: {
     ignoreBuildErrors: true,
@@ -20,7 +21,17 @@ const nextConfig = {
         hostname: '**',
       },
     ],
-  }
+  },
+  webpack: (config) => {
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+    };
+    return config;
+  },
+  productionBrowserSourceMaps: true,
+  poweredByHeader: false,
+  reactStrictMode: true,
 }
 
 module.exports = nextConfig
