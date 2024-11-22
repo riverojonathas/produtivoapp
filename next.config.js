@@ -29,9 +29,8 @@ const nextConfig = {
     };
     return config;
   },
-  productionBrowserSourceMaps: true,
-  poweredByHeader: false,
-  reactStrictMode: true,
+  distDir: '.next',
+  cleanDistDir: true,
 }
 
 module.exports = nextConfig

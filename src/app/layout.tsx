@@ -1,11 +1,14 @@
-'use client';
-
 import { ThemeProvider } from '@/providers/theme-provider'
-import { Toaster } from 'sonner'
-import './globals.css'
+import { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
+
+export const metadata: Metadata = {
+  title: 'Produtivo',
+  description: 'Plataforma de gestão de produtos digitais',
+}
 
 export default function RootLayout({
   children,
@@ -15,9 +18,13 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem={false}
+          storageKey="produtivo-theme"
+        >
           {children}
-          <Toaster />
         </ThemeProvider>
       </body>
     </html>
