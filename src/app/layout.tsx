@@ -18,12 +18,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem={false}
-          storageKey="produtivo-theme"
-        >
+        <ThemeProvider>
           {children}
         </ThemeProvider>
       </body>

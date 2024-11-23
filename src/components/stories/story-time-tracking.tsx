@@ -10,9 +10,7 @@ import { IUserStory } from '@/types/story'
 import { 
   Clock,
   Calendar,
-  Timer,
   AlertTriangle,
-  CheckCircle2,
   PlayCircle,
   PauseCircle
 } from 'lucide-react'

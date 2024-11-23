@@ -11,7 +11,6 @@ import {
   Users,
   Target,
   Lightbulb,
-  AlertTriangle,
   BookOpen,
   Trash2,
   Files,

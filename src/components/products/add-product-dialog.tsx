@@ -4,47 +4,46 @@ import { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { useProducts } from '@/hooks/use-products'
 import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
 
 interface AddProductDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-const defaultFormData = {
-  name: '',
-  description: ''
-}
-
 export function AddProductDialog({ open, onOpenChange }: AddProductDialogProps) {
   const { createProduct } = useProducts()
-  const [formData, setFormData] = useState(defaultFormData)
+  const [productName, setProductName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
     try {
-      const name = formData.name.trim()
-      const description = formData.description?.trim() || ''
+      const name = productName.trim()
+
+      if (!name) {
+        throw new Error('Nome do produto é obrigatório')
+      }
 
       if (name.length > 100) {
         throw new Error('Nome do produto deve ter no máximo 100 caracteres')
       }
 
-      await createProduct.mutateAsync({
+      const product = await createProduct.mutateAsync({
         name,
-        description,
-        status: 'active',
-        team: []
+        status: 'active'
       })
 
       toast.success('Produto criado com sucesso!')
-      setFormData(defaultFormData)
       onOpenChange(false)
+      
+      // Redireciona para a página de edição do produto
+      router.push(`/products/${product.id}/edit`)
     } catch (error) {
       console.error('Erro ao criar produto:', error)
       if (error instanceof Error) {
@@ -55,12 +54,6 @@ export function AddProductDialog({ open, onOpenChange }: AddProductDialogProps) 
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const handleChange = (field: keyof typeof defaultFormData) => (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setFormData(prev => ({ ...prev, [field]: e.target.value }))
   }
 
   return (
@@ -74,24 +67,16 @@ export function AddProductDialog({ open, onOpenChange }: AddProductDialogProps) 
           <div className="space-y-2">
             <Input
               placeholder="Nome do produto"
-              value={formData.name}
-              onChange={handleChange('name')}
+              value={productName}
+              onChange={(e) => setProductName(e.target.value)}
               maxLength={100}
+              autoFocus
             />
-            {formData.name.length > 0 && (
+            {productName.length > 0 && (
               <div className="text-xs text-[var(--color-text-secondary)]">
-                {formData.name.length}/100 caracteres
+                {productName.length}/100 caracteres
               </div>
             )}
-          </div>
-
-          <div className="space-y-2">
-            <Textarea
-              placeholder="Descrição do produto"
-              value={formData.description}
-              onChange={handleChange('description')}
-              rows={3}
-            />
           </div>
 
           <div className="flex justify-end gap-3">
@@ -104,9 +89,9 @@ export function AddProductDialog({ open, onOpenChange }: AddProductDialogProps) 
             </Button>
             <Button
               type="submit"
-              disabled={isLoading || createProduct.isPending}
+              disabled={isLoading || createProduct.isPending || !productName.trim()}
             >
-              {isLoading || createProduct.isPending ? 'Criando...' : 'Criar Produto'}
+              {isLoading || createProduct.isPending ? 'Criando...' : 'Criar e Configurar'}
             </Button>
           </div>
         </form>

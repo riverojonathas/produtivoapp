@@ -1,33 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { AnimatedDialog } from '@/components/ui/animated-dialog'
+import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { X, Plus, Tag } from "lucide-react"
-import { useProducts } from "@/hooks/use-products"
-import { toast } from "sonner"
-import { cn } from "@/lib/utils"
-
-interface Tag {
-  id: string
-  name: string
-  type: 'priority' | 'phase' | 'category' | 'custom'
-  color?: string
-}
-
-interface ProductTagsDialogProps {
-  productId: string
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  currentTags?: Tag[]
-}
+import { useProducts } from '@/hooks/use-products'
+import { toast } from 'sonner'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ITag } from '@/types/product'
 
 const tagTypes = {
   priority: {
@@ -83,41 +66,63 @@ const tagTypes = {
   }
 }
 
-export function ProductTagsDialog({ productId, open, onOpenChange, currentTags = [] }: ProductTagsDialogProps) {
-  const [selectedTags, setSelectedTags] = useState<Tag[]>(currentTags)
-  const [newTag, setNewTag] = useState('')
+interface ProductTagsDialogProps {
+  productId: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  currentTags?: ITag[]
+}
+
+interface TagType {
+  id: string
+  product_id: string
+  name: string
+  type: 'priority' | 'phase' | 'category' | 'custom'
+  color?: string
+  created_at: string
+  updated_at: string
+}
+
+export function ProductTagsDialog({ 
+  productId, 
+  open, 
+  onOpenChange,
+  currentTags = []
+}: ProductTagsDialogProps) {
   const { updateProductTags } = useProducts()
+  const [selectedTags, setSelectedTags] = useState<ITag[]>(
+    Array.from(new Map(currentTags.map(tag => [`${tag.type}-${tag.name}`, tag])).values())
+  )
+  const [newTag, setNewTag] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Atualizar selectedTags quando o dialog abrir
-  const handleOpenChange = (open: boolean) => {
-    if (open) {
-      setSelectedTags(currentTags)
+  const handleAddTag = (name: string, type: 'priority' | 'phase' | 'category' | 'custom' = 'custom', colorClass?: string) => {
+    if (!name.trim()) return
+
+    if (type !== 'custom') {
+      setSelectedTags(prev => prev.filter(tag => tag.type !== type))
     } else {
-      setSelectedTags([])
-      setNewTag('')
-    }
-    onOpenChange(open)
-  }
-
-  const handleAddTag = (name: string, type: Tag['type'] = 'custom', colorClass?: string) => {
-    const existingTag = selectedTags.find(tag => 
-      tag.name.toLowerCase() === name.toLowerCase() && tag.type === type
-    )
-
-    if (existingTag) {
-      toast.error('Esta tag já existe')
-      return
+      const existingCustomTag = selectedTags.find(tag => 
+        tag.type === 'custom' && tag.name.toLowerCase() === name.toLowerCase()
+      )
+      
+      if (existingCustomTag) {
+        toast.error('Esta tag já existe')
+        return
+      }
     }
 
-    const newTag: Tag = {
-      id: `temp-${Date.now()}-${Math.random()}`,
-      name,
+    const newTagObj: ITag = {
+      id: `temp-${Date.now()}`,
+      product_id: productId,
+      name: name.trim(),
       type,
-      color: colorClass
+      color: colorClass,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }
 
-    setSelectedTags(prev => [...prev, newTag])
+    setSelectedTags(prev => [...prev, newTagObj])
     setNewTag('')
   }
 
@@ -129,18 +134,21 @@ export function ProductTagsDialog({ productId, open, onOpenChange, currentTags =
     try {
       setIsSubmitting(true)
       
-      // Preparar tags para salvar
-      const tagsToSave = selectedTags.map(({ id, ...tag }) => ({
-        ...tag,
-        type: tag.type || 'custom'
-      }))
-
+      const uniqueTags = Array.from(
+        new Map(selectedTags.map(tag => [`${tag.type}-${tag.name}`, tag])).values()
+      )
+      
       await updateProductTags.mutateAsync({
         productId,
-        tags: tagsToSave
+        tags: uniqueTags.map(tag => ({
+          name: tag.name,
+          type: tag.type,
+          color: tag.color
+        }))
       })
 
-      handleOpenChange(false)
+      toast.success('Tags atualizadas com sucesso')
+      onOpenChange(false)
     } catch (error) {
       console.error('Erro ao atualizar tags:', error)
       toast.error('Erro ao atualizar tags')
@@ -149,113 +157,181 @@ export function ProductTagsDialog({ productId, open, onOpenChange, currentTags =
     }
   }
 
+  // Função para organizar as tags por tipo
+  const organizedTags = selectedTags.reduce((acc, tag) => {
+    const type = tag.type as keyof typeof tagTypes
+    if (!acc[type]) {
+      acc[type] = []
+    }
+    acc[type].push(tag)
+    return acc
+  }, {} as Record<string, ITag[]>)
+
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+    <AnimatedDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      className="sm:max-w-[600px]"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Tag className="w-4 h-4" />
             Gerenciar Tags
           </DialogTitle>
+          <DialogDescription>
+            Adicione ou remova tags para organizar seu produto.
+          </DialogDescription>
         </DialogHeader>
 
-        {/* Tags Atuais */}
         <div className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            {selectedTags.map(tag => (
-              <Badge 
-                key={tag.id}
-                variant="secondary"
-                className={cn(
-                  "flex items-center gap-1",
-                  tag.color
-                )}
-              >
-                {tag.name}
-                <button
-                  onClick={() => handleRemoveTag(tag.id)}
-                  className="ml-1 hover:text-red-600"
-                  aria-label="Remover tag"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </Badge>
+          {/* Tags Predefinidas */}
+          <div className="space-y-4">
+            {Object.entries(tagTypes).map(([type, { label, colors }]) => (
+              <div key={type} className="space-y-2">
+                <h4 className="text-sm font-medium">{label}</h4>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(colors).map(([key, { name, class: colorClass }]) => {
+                    const isSelected = selectedTags.some(
+                      tag => tag.name === name && tag.type === type
+                    )
+                    
+                    return (
+                      <Badge
+                        key={key}
+                        variant="secondary"
+                        className={`${colorClass} cursor-pointer hover:opacity-80 ${
+                          isSelected ? 'opacity-50' : ''
+                        }`}
+                        onClick={() => !isSelected && handleAddTag(name, type as any, colorClass)}
+                      >
+                        {name}
+                      </Badge>
+                    )
+                  })}
+                </div>
+              </div>
             ))}
+          </div>
+
+          {/* Tags Selecionadas - Organizadas por tipo */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium">Tags Selecionadas</h4>
+            {Object.entries(tagTypes).map(([type, { label }]) => {
+              const tagsOfType = organizedTags[type] || []
+              
+              if (tagsOfType.length === 0) return null
+
+              return (
+                <div key={type} className="space-y-2">
+                  <h5 className="text-xs text-[var(--color-text-secondary)]">{label}</h5>
+                  <div className="flex flex-wrap gap-2">
+                    {tagsOfType.map((tag: TagType) => (
+                      <Badge 
+                        key={tag.id}
+                        variant="secondary"
+                        className={`flex items-center gap-1 ${tag.color || ''}`}
+                      >
+                        {tag.name}
+                        <button
+                          onClick={() => handleRemoveTag(tag.id)}
+                          className="ml-1 hover:text-red-600"
+                          aria-label="Remover tag"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+
+            {/* Tags Personalizadas */}
+            {selectedTags.filter(tag => tag.type === 'custom').length > 0 && (
+              <div className="space-y-2">
+                <h5 className="text-xs text-[var(--color-text-secondary)]">Personalizadas</h5>
+                <div className="flex flex-wrap gap-2">
+                  {selectedTags
+                    .filter(tag => tag.type === 'custom')
+                    .map(tag => (
+                      <Badge 
+                        key={tag.id}
+                        variant="secondary"
+                        className="flex items-center gap-1"
+                      >
+                        {tag.name}
+                        <button
+                          onClick={() => handleRemoveTag(tag.id)}
+                          className="ml-1 hover:text-red-600"
+                          aria-label="Remover tag"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                </div>
+              </div>
+            )}
+
             {selectedTags.length === 0 && (
               <p className="text-sm text-[var(--color-text-secondary)]">
                 Nenhuma tag adicionada
               </p>
             )}
           </div>
-        </div>
 
-        {/* Adicionar Nova Tag */}
-        <div className="flex gap-2">
-          <Input
-            value={newTag}
-            onChange={(e) => setNewTag(e.target.value)}
-            placeholder="Nova tag personalizada..."
-            className="flex-1"
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' && newTag) {
-                e.preventDefault()
-                handleAddTag(newTag)
-              }
-            }}
-          />
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => newTag && handleAddTag(newTag)}
-            disabled={!newTag || isSubmitting}
-          >
-            <Plus className="w-4 h-4" />
-          </Button>
-        </div>
-
-        {/* Tags Predefinidas */}
-        <div className="space-y-4">
-          {Object.entries(tagTypes).map(([type, { label, colors }]) => (
-            <div key={type} className="space-y-2">
-              <h4 className="text-sm font-medium">{label}</h4>
-              <div className="flex flex-wrap gap-2">
-                {Object.entries(colors).map(([key, { name, class: colorClass }]) => (
-                  <Badge
-                    key={key}
-                    variant="secondary"
-                    className={cn(
-                      colorClass,
-                      "cursor-pointer hover:opacity-80"
-                    )}
-                    onClick={() => handleAddTag(name, type as Tag['type'], colorClass)}
-                  >
-                    {name}
-                  </Badge>
-                ))}
-              </div>
+          {/* Adicionar Tag Personalizada */}
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium">Adicionar Tag Personalizada</h4>
+            <div className="flex gap-2">
+              <Input
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                placeholder="Nova tag..."
+                className="flex-1"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && newTag) {
+                    e.preventDefault()
+                    handleAddTag(newTag)
+                  }
+                }}
+              />
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => newTag && handleAddTag(newTag)}
+                disabled={!newTag || isSubmitting}
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
             </div>
-          ))}
-        </div>
+          </div>
 
-        {/* Ações */}
-        <div className="flex justify-end gap-2 mt-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => handleOpenChange(false)}
-            disabled={isSubmitting}
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="button"
-            onClick={handleSave}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Salvando...' : 'Salvar'}
-          </Button>
+          {/* Ações */}
+          <div className="flex justify-end gap-2 mt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSave}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </motion.div>
+    </AnimatedDialog>
   )
 } 

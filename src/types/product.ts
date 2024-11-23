@@ -1,62 +1,106 @@
-import { ITag } from '@/types/tag'
+import { 
+  Rocket,
+  Hammer,
+  Archive,
+  LucideIcon
+} from 'lucide-react'
 
-export interface IProductMetric {
+export type ProductStatus = 'active' | 'development' | 'archived'
+export type RiskCategory = 'value' | 'usability' | 'feasibility' | 'business'
+export type TeamMemberRole = 'owner' | 'manager' | 'member'
+export type MetricType = 'heart' | 'north_star' | 'kpi'
+export type TagType = 'priority' | 'phase' | 'category' | 'custom'
+
+export interface ITag {
   id: string
   product_id: string
-  type: 'heart' | 'north_star'
   name: string
-  value: string
+  type: TagType
+  color?: string
+  created_at: string
+  updated_at: string
 }
 
 export interface IProductRisk {
   id: string
   product_id: string
-  category: string
+  category: RiskCategory
   description: string
   mitigation: string
+  created_at: string
+  updated_at: string
 }
 
-export interface IProductTag extends ITag {
+export interface IProductMetric {
+  id: string
   product_id: string
+  type: MetricType
+  name: string
+  value: string
+  created_at: string
+  updated_at: string
 }
 
-export type ProductStatus = 'active' | 'inactive' | 'archived' | 'development'
+export interface ITeamMember {
+  id: string
+  name: string
+  email: string
+  role: TeamMemberRole
+  avatar_url?: string | null
+}
 
 export interface IProduct {
   id: string
   name: string
-  description: string
+  description: string | null
   status: ProductStatus
-  team?: string[]
-  created_at: string
-  owner_id: string
-  avatar_url?: string | null
-  vision?: string | null
+  owner_id: string | null
+  team: ITeamMember[]
   target_audience?: string | null
-  risks_count?: number
-  metrics_count?: number
+  vision?: string | null
+  avatar_url?: string | null
+  created_at: string
+  updated_at: string
   product_metrics?: IProductMetric[]
   product_risks?: IProductRisk[]
-  product_tags?: IProductTag[]
   tags?: ITag[]
-  priority?: 'low' | 'medium' | 'high' | 'urgent'
-  progress?: number
+  product_tags?: ITag[]
+  risks_count?: number
+  metrics_count?: number
 }
 
-// Tipo para uso em componentes que não aceitam null
-export type Product = Omit<IProduct, 'vision' | 'avatar_url' | 'target_audience'> & {
-  vision?: string
-  avatar_url?: string
-  target_audience?: string
+export interface UploadAvatarResponse {
+  url: string
 }
 
-// Função helper para converter IProduct para Product
-export function toProduct(product: IProduct): Product {
-  return {
-    ...product,
-    vision: product.vision || undefined,
-    avatar_url: product.avatar_url || undefined,
-    target_audience: product.target_audience || undefined,
-    tags: product.product_tags || product.tags || []
+export interface UploadAvatarError {
+  message: string
+}
+
+interface StatusConfig {
+  label: string
+  icon: LucideIcon
+  color: string
+  bgColor: string
+}
+
+export const productStatusConfig: Record<ProductStatus, StatusConfig> = {
+  active: {
+    label: 'Ativo',
+    icon: Rocket,
+    color: 'text-green-500',
+    bgColor: 'bg-green-500/10'
+  },
+  development: {
+    label: 'Em Desenvolvimento',
+    icon: Hammer,
+    color: 'text-blue-500',
+    bgColor: 'bg-blue-500/10'
+  },
+  archived: {
+    label: 'Arquivado',
+    icon: Archive,
+    color: 'text-gray-500',
+    bgColor: 'bg-gray-500/10'
   }
-} 
+} as const 

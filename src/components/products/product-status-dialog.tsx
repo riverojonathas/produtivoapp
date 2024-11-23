@@ -1,16 +1,14 @@
 'use client'
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { useState } from 'react'
+import { AnimatedDialog } from '@/components/ui/animated-dialog'
+import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { useProducts } from "@/hooks/use-products"
-import { toast } from "sonner"
-import { cn } from "@/lib/utils"
-import { ProductStatus } from '@/types/product'
+import { useProducts } from '@/hooks/use-products'
+import { toast } from 'sonner'
+import { motion } from 'framer-motion'
+import { ProductStatus, productStatusConfig } from '@/types/product'
+import { LucideIcon } from 'lucide-react'
 
 interface ProductStatusDialogProps {
   productId: string
@@ -19,73 +17,83 @@ interface ProductStatusDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
-const statusOptions = [
-  { 
-    id: 'development' as ProductStatus, 
-    label: 'Em Desenvolvimento',
-    description: 'Produto em fase de desenvolvimento',
-    color: 'bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400'
-  },
-  { 
-    id: 'active' as ProductStatus, 
-    label: 'Ativo',
-    description: 'Produto em uso ativo',
-    color: 'bg-green-500/10 text-green-600 dark:bg-green-500/20 dark:text-green-400'
-  },
-  { 
-    id: 'archived' as ProductStatus, 
-    label: 'Arquivado',
-    description: 'Produto não está mais em uso',
-    color: 'bg-gray-500/10 text-gray-600 dark:bg-gray-500/20 dark:text-gray-400'
-  }
-]
-
-export function ProductStatusDialog({ productId, currentStatus, open, onOpenChange }: ProductStatusDialogProps) {
+export function ProductStatusDialog({
+  productId,
+  currentStatus,
+  open,
+  onOpenChange
+}: ProductStatusDialogProps) {
   const { updateProduct } = useProducts()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleStatusChange = async (newStatus: ProductStatus) => {
+  const handleUpdateStatus = async (status: ProductStatus) => {
     try {
+      setIsSubmitting(true)
       await updateProduct.mutateAsync({
         id: productId,
-        data: { status: newStatus }
+        data: { status }
       })
       toast.success('Status atualizado com sucesso')
       onOpenChange(false)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao atualizar status:', error)
-      toast.error('Erro ao atualizar status')
+      toast.error(error.message || 'Erro ao atualizar status')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Alterar Status</DialogTitle>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          {statusOptions.map((status) => (
+    <AnimatedDialog
+      open={open}
+      onOpenChange={(newOpen) => {
+        if (!isSubmitting) {
+          onOpenChange(newOpen)
+        }
+      }}
+      className="sm:max-w-[400px]"
+    >
+      <DialogHeader>
+        <DialogTitle>Alterar Status</DialogTitle>
+        <DialogDescription>
+          Selecione o novo status do produto
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="grid gap-3 mt-4">
+        {(Object.entries(productStatusConfig) as [ProductStatus, typeof productStatusConfig[keyof typeof productStatusConfig]][]).map(([status, config]) => {
+          const Icon: LucideIcon = config.icon
+          const isSelected = status === currentStatus
+
+          return (
             <Button
-              key={status.id}
+              key={status}
               variant="outline"
-              className={cn(
-                "justify-start h-auto py-4",
-                status.id === currentStatus && "border-[var(--color-primary)] bg-[var(--color-primary-subtle)]",
-                status.color
-              )}
-              onClick={() => handleStatusChange(status.id)}
-              disabled={status.id === currentStatus}
+              className={`
+                relative flex items-center justify-start gap-3 p-4 h-auto
+                ${isSelected ? `${config.bgColor} ${config.color} border-2` : ''}
+              `}
+              onClick={() => handleUpdateStatus(status)}
+              disabled={isSubmitting || isSelected}
             >
-              <div className="flex flex-col items-start">
-                <span className="font-medium">{status.label}</span>
-                <span className="text-xs opacity-70">
-                  {status.description}
-                </span>
+              <div className={`p-2 rounded-lg ${config.bgColor}`}>
+                <Icon className={`w-4 h-4 ${config.color}`} />
               </div>
+              <div className="flex flex-col items-start">
+                <span className="font-medium">{config.label}</span>
+              </div>
+              {isSelected && (
+                <motion.div
+                  layoutId="selected"
+                  className="absolute inset-0 border-2 rounded-lg"
+                  initial={false}
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                />
+              )}
             </Button>
-          ))}
-        </div>
-      </DialogContent>
-    </Dialog>
+          )
+        })}
+      </div>
+    </AnimatedDialog>
   )
 } 

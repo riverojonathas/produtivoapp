@@ -11,11 +11,8 @@ import {
   BookOpen,
   Target,
   Lightbulb,
-  ArrowRight,
   X,
-  Sparkles,
-  GitBranch
-} from "lucide-react"
+  Sparkles} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useUserPreferences } from "@/hooks/use-user-preferences"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -205,7 +202,6 @@ interface WelcomeGuideProps {
 
 export function WelcomeGuide({ 
   completedSteps, 
-  onStepComplete, 
   onHide 
 }: WelcomeGuideProps) {
   const router = useRouter()
@@ -224,15 +220,6 @@ export function WelcomeGuide({
     }
   )
 
-  const handleHideGuide = async () => {
-    if (!preferences) return
-
-    await updatePreferences({
-      showWelcomeGuide: false,
-      completedSteps: preferences.completedSteps,
-      enabledWidgets: preferences.enabledWidgets
-    })
-  }
 
   const handleStepComplete = async (stepId: string) => {
     if (!preferences) return

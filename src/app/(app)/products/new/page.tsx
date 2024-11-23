@@ -1,147 +1,93 @@
 'use client'
 
-import { useState, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { ArrowLeft } from 'lucide-react'
 import { useProducts } from '@/hooks/use-products'
 import { toast } from 'sonner'
-import { IProduct } from '@/types/product'
+import { PageContainer, PageHeader, PageContent } from '@/components/layout/page-container'
+import { ProductStatus } from '@/types/product'
 
-interface Props {
-  mode?: 'create' | 'edit'
-  initialData?: IProduct
-}
-
-function NewProductPageContent({ mode = 'create', initialData }: Props) {
+export default function NewProductPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const duplicateId = searchParams.get('duplicate')
-  const { createProduct, updateProduct, products } = useProducts()
-  const [formData, setFormData] = useState<Partial<IProduct>>({
-    name: initialData?.name || '',
-    description: initialData?.description || '',
-    status: initialData?.status || 'development',
-    vision: initialData?.vision || '',
-    target_audience: initialData?.target_audience || '',
-    product_metrics: initialData?.product_metrics || [],
-    product_risks: initialData?.product_risks || [],
-    tags: initialData?.tags || []
-  })
+  const { createProduct } = useProducts()
+  const [name, setName] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     try {
-      if (mode === 'edit' && initialData) {
-        await updateProduct.mutateAsync({ id: initialData.id, data: formData })
-        toast.success('Produto atualizado com sucesso!')
-      } else {
-        await createProduct.mutateAsync(formData)
-        toast.success('Produto criado com sucesso!')
+      if (!name.trim()) {
+        toast.error('Nome do produto é obrigatório')
+        return
       }
-      router.push('/products')
-    } catch (error) {
-      toast.error('Erro ao salvar o produto')
-      console.error(error)
+
+      setIsSubmitting(true)
+
+      const product = await createProduct.mutateAsync({
+        name: name.trim(),
+        status: 'development' as const
+      })
+
+      toast.success('Produto criado com sucesso!')
+      router.push(`/products/${product.id}`)
+    } catch (error: any) {
+      console.error('Erro ao criar produto:', error)
+      toast.error(error.message || 'Erro ao criar produto')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   return (
-    <div className="h-full flex flex-col -m-6">
-      <div className="bg-[var(--color-background-primary)] border-b border-[var(--color-border)]">
-        <div className="h-14 px-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
-              onClick={() => router.push('/products')}
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <h1 className="text-sm font-medium text-[var(--color-text-primary)]">
-              {mode === 'create' ? 'Novo Produto' : 'Editar Produto'}
-            </h1>
-          </div>
+    <PageContainer>
+      <PageHeader>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => router.push('/products')}
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <h1 className="text-sm font-medium">Novo Produto</h1>
         </div>
-      </div>
+      </PageHeader>
 
-      <div className="flex-1 p-6 overflow-auto">
-        <div className="max-w-2xl mx-auto">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Nome do Produto</label>
-                <Input
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Digite o nome do produto"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Descrição</label>
-                <Textarea
-                  required
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Descreva o produto brevemente"
-                  className="min-h-[100px]"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Visão do Produto</label>
-                <Textarea
-                  value={formData.vision ?? ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, vision: e.target.value }))}
-                  placeholder="Descreva a visão do produto"
-                  className="min-h-[100px]"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Público-alvo</label>
-                <Textarea
-                  value={formData.target_audience ?? ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, target_audience: e.target.value }))}
-                  placeholder="Descreva o público-alvo do produto"
-                  className="min-h-[100px]"
-                />
-              </div>
+      <PageContent>
+        <div className="max-w-md mx-auto">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Nome do produto
+              </label>
+              <Input
+                autoFocus
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Digite o nome do produto"
+                className="text-lg"
+                disabled={isSubmitting}
+              />
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                Você poderá adicionar mais informações depois de criar o produto.
+              </p>
             </div>
-            
-            <div className="flex justify-between pt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.push('/products')}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                className="bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)]"
-              >
-                {mode === 'create' ? 'Criar Produto' : 'Salvar Alterações'}
-              </Button>
-            </div>
+
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full"
+            >
+              {isSubmitting ? 'Criando...' : 'Criar e Configurar'}
+            </Button>
           </form>
         </div>
-      </div>
-    </div>
-  )
-}
-
-export default function NewProductPage(props: Props) {
-  return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center h-full">
-        <div className="text-[var(--color-text-secondary)]">Carregando...</div>
-      </div>
-    }>
-      <NewProductPageContent {...props} />
-    </Suspense>
+      </PageContent>
+    </PageContainer>
   )
 }

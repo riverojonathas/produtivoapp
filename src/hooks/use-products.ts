@@ -1,235 +1,383 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { IProduct, IProductTag } from '@/types/product'
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { 
+  IProduct, 
+  IProductRisk,
+  IProductMetric,
+  ITeamMember,
+  ITag,
+  RiskCategory,
+  ProductStatus 
+} from '@/types/product'
 
-interface UseProductsReturn {
-  products: IProduct[]
-  product?: IProduct
-  isLoading: boolean
-  createProduct: {
-    mutateAsync: (data: Partial<IProduct>) => Promise<IProduct>
-    isPending: boolean
-  }
-  updateProduct: {
-    mutateAsync: (params: { id: string, data: Partial<IProduct> }) => Promise<IProduct>
-    isPending: boolean
-  }
-  deleteProduct: {
-    mutateAsync: (id: string) => Promise<void>
-    isPending: boolean
-  }
-  refresh: () => Promise<void>
-}
-
-export function useProducts(id?: string): UseProductsReturn {
-  const [products, setProducts] = useState<IProduct[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isPending, setIsPending] = useState(false)
+export function useProducts(productId?: string) {
   const supabase = createClientComponentClient()
+  const queryClient = useQueryClient()
 
-  // Função para carregar produtos com a query corrigida
-  const loadProducts = async () => {
-    try {
+  // Query para buscar produtos
+  const { data: products = [], isLoading } = useQuery({
+    queryKey: ['products'],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select(`
-          *,
-          product_metrics (*),
-          product_risks (*),
-          product_tags (*)
-        `)
+        .select('*, product_metrics (*), product_risks (*), product_tags (*)')
         .order('created_at', { ascending: false })
 
-      if (error) {
-        console.error('Erro ao carregar produtos:', error)
-        throw error
-      }
-
-      // Transformar os dados para manter a estrutura esperada
-      const transformedData = data?.map(product => ({
-        ...product,
-        tags: product.product_tags || []
-      }))
-
-      setProducts(transformedData || [])
-    } catch (error) {
-      console.error('Erro ao carregar produtos:', error)
-      throw error
-    } finally {
-      setIsLoading(false)
+      if (error) throw error
+      return data as IProduct[]
     }
-  }
+  })
 
-  useEffect(() => {
-    loadProducts()
-  }, [])
+  // Query para buscar produto específico
+  const { data: product, isLoading: isLoadingProduct } = useQuery({
+    queryKey: ['product', productId],
+    queryFn: async () => {
+      if (!productId) return null
 
-  const createProduct = {
-    mutateAsync: async (data: Partial<IProduct>) => {
-      setIsPending(true)
+      const { data, error } = await supabase
+        .from('products')
+        .select('*, product_metrics (*), product_risks (*), product_tags (*)')
+        .eq('id', productId)
+        .single()
+
+      if (error) throw error
+      return data as IProduct
+    },
+    enabled: !!productId
+  })
+
+  // Query para buscar riscos
+  const { data: risks = [], isLoading: isLoadingRisks } = useQuery({
+    queryKey: ['product-risks', productId],
+    queryFn: async () => {
+      if (!productId) return []
+
+      const { data, error } = await supabase
+        .from('product_risks')
+        .select('*')
+        .eq('product_id', productId)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      return data as IProductRisk[]
+    },
+    enabled: !!productId
+  })
+
+  // Mutation para criar produto
+  const createProduct = useMutation({
+    mutationFn: async (data: Partial<IProduct>) => {
       try {
-        // Remover campos que não devem ser enviados para o banco
-        const { tags, product_tags: _, product_metrics, product_risks, ...productData } = data
+        if (!data.name?.trim()) {
+          throw new Error('Nome do produto é obrigatório')
+        }
 
-        const { data: newProduct, error } = await supabase
+        // Buscar o usuário atual
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        if (userError) throw userError
+
+        if (!user) {
+          throw new Error('Usuário não autenticado')
+        }
+
+        // Garantir que o status seja válido
+        const status: ProductStatus = data.status || 'development'
+        if (!['active', 'development', 'archived'].includes(status)) {
+          throw new Error('Status inválido')
+        }
+
+        const productData = {
+          name: data.name.trim(),
+          description: data.description || null,
+          status,
+          owner_id: user.id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+
+        const { data: product, error } = await supabase
           .from('products')
           .insert([productData])
-          .select(`
-            *,
-            product_metrics (*),
-            product_risks (*),
-            product_tags (*)
-          `)
+          .select()
           .single()
 
         if (error) {
-          console.error('Erro ao criar produto:', error)
-          throw error
+          console.error('Erro do Supabase:', error)
+          throw new Error(error.message)
         }
 
-        // Transformar os dados do novo produto
-        const transformedProduct = {
-          ...newProduct,
-          tags: newProduct.product_tags || []
+        return product as IProduct
+      } catch (error: any) {
+        console.error('Erro detalhado:', error)
+        throw new Error(error.message || 'Erro ao criar produto')
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+    },
+    onError: (error: Error) => {
+      console.error('Erro ao criar produto:', error)
+      toast.error(error.message || 'Erro ao criar produto')
+    }
+  })
+
+  // Mutation para atualizar produto
+  const updateProduct = useMutation({
+    mutationFn: async ({ id, data }: { id: string, data: Partial<IProduct> }) => {
+      const { error } = await supabase
+        .from('products')
+        .update(data)
+        .eq('id', id)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+    }
+  })
+
+  // Mutation para deletar produto
+  const deleteProduct = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+    }
+  })
+
+  // Mutation para adicionar risco
+  const addRisk = useMutation({
+    mutationFn: async ({ 
+      productId, 
+      data 
+    }: { 
+      productId: string
+      data: Partial<IProductRisk>
+    }) => {
+      try {
+        if (!data.description?.trim() || !data.mitigation?.trim() || !data.category) {
+          throw new Error('Campos obrigatórios não preenchidos')
         }
-        
-        setProducts(prev => [transformedProduct, ...prev])
-        
-        return transformedProduct
+
+        const riskData = {
+          product_id: productId,
+          category: data.category,
+          description: data.description.trim(),
+          mitigation: data.mitigation.trim(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+
+        const { data: risk, error } = await supabase
+          .from('product_risks')
+          .insert([riskData])
+          .select()
+          .single()
+
+        if (error) throw error
+        return risk
       } catch (error) {
-        console.error('Erro ao criar produto:', error)
+        console.error('Erro ao criar risco:', error)
         throw error
-      } finally {
-        setIsPending(false)
       }
     },
-    isPending
-  }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      toast.success('Risco adicionado com sucesso')
+    },
+    onError: (error: any) => {
+      console.error('Erro ao adicionar risco:', error)
+      toast.error(error.message || 'Erro ao adicionar risco')
+    }
+  })
 
-  const updateProduct = {
-    mutateAsync: async ({ id, data }: { id: string, data: Partial<IProduct> }) => {
-      setIsPending(true)
+  // Mutation para atualizar risco
+  const updateRisk = useMutation({
+    mutationFn: async ({ 
+      productId, 
+      riskId, 
+      data 
+    }: { 
+      productId: string
+      riskId: string
+      data: Partial<IProductRisk>
+    }) => {
       try {
-        // Remover campos que não devem ser enviados para o banco
-        const { tags, product_tags: _, product_metrics, product_risks, ...updateData } = data
-
-        const { data: updatedProduct, error } = await supabase
-          .from('products')
-          .update(updateData)
-          .eq('id', id)
-          .select(`
-            *,
-            product_metrics (*),
-            product_risks (*),
-            product_tags (*)
-          `)
-          .single()
-
-        if (error) {
-          console.error('Erro ao atualizar produto:', error)
-          throw new Error(error.message || 'Erro ao atualizar produto')
+        if (!data.description?.trim() || !data.mitigation?.trim()) {
+          throw new Error('Campos obrigatórios não preenchidos')
         }
 
-        if (!updatedProduct) {
-          throw new Error('Produto não encontrado')
-        }
+        const { error } = await supabase
+          .from('product_risks')
+          .update({
+            ...data,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', riskId)
+          .eq('product_id', productId)
 
-        // Transformar os dados do produto atualizado
-        const transformedProduct = {
-          ...updatedProduct,
-          tags: updatedProduct.product_tags || []
-        }
-
-        setProducts(prev => prev.map(p => p.id === id ? transformedProduct : p))
-        
-        return transformedProduct
+        if (error) throw error
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Erro ao atualizar produto'
-        console.error('Erro ao atualizar produto:', message)
-        throw new Error(message)
-      } finally {
-        setIsPending(false)
+        console.error('Erro ao atualizar risco:', error)
+        throw error
       }
     },
-    isPending
-  }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      toast.success('Risco atualizado com sucesso')
+    },
+    onError: (error: any) => {
+      console.error('Erro ao atualizar risco:', error)
+      toast.error(error.message || 'Erro ao atualizar risco')
+    }
+  })
 
-  const deleteProduct = {
-    mutateAsync: async (id: string) => {
-      setIsPending(true)
+  // Mutation para remover risco
+  const removeRisk = useMutation({
+    mutationFn: async ({ 
+      productId, 
+      riskId 
+    }: { 
+      productId: string
+      riskId: string 
+    }) => {
       try {
-        // Primeiro excluir os registros relacionados
-        const { error: risksError } = await supabase
+        const { error } = await supabase
           .from('product_risks')
           .delete()
-          .eq('product_id', id)
+          .eq('id', riskId)
+          .eq('product_id', productId)
 
-        if (risksError) {
-          console.error('Erro ao excluir riscos:', risksError)
-          throw new Error('Erro ao excluir riscos do produto')
-        }
-
-        const { error: metricsError } = await supabase
-          .from('product_metrics')
-          .delete()
-          .eq('product_id', id)
-
-        if (metricsError) {
-          console.error('Erro ao excluir métricas:', metricsError)
-          throw new Error('Erro ao excluir métricas do produto')
-        }
-
-        const { error: tagsError } = await supabase
-          .from('product_tags')
-          .delete()
-          .eq('product_id', id)
-
-        if (tagsError) {
-          console.error('Erro ao excluir tags:', tagsError)
-          throw new Error('Erro ao excluir tags do produto')
-        }
-
-        // Agora podemos excluir o produto
-        const { error: productError } = await supabase
-          .from('products')
-          .delete()
-          .eq('id', id)
-
-        if (productError) {
-          console.error('Erro ao excluir produto:', productError)
-          throw new Error(productError.message || 'Erro ao excluir produto')
-        }
-
-        // Remover o produto da lista local
-        setProducts(prev => prev.filter(p => p.id !== id))
+        if (error) throw error
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Erro ao excluir produto'
-        console.error('Erro ao excluir produto:', error)
-        throw new Error(message)
-      } finally {
-        setIsPending(false)
+        console.error('Erro ao remover risco:', error)
+        throw error
       }
     },
-    isPending
-  }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      toast.success('Risco removido com sucesso')
+    },
+    onError: (error: any) => {
+      console.error('Erro ao remover risco:', error)
+      toast.error(error.message || 'Erro ao remover risco')
+    }
+  })
 
-  const refresh = async () => {
-    setIsLoading(true)
-    await loadProducts()
-  }
+  // Mutation para atualizar tags
+  const updateProductTags = useMutation({
+    mutationFn: async ({ productId, tags }: { productId: string, tags: Partial<ITag>[] }) => {
+      const { error } = await supabase
+        .from('product_tags')
+        .upsert(
+          tags.map(tag => ({
+            product_id: productId,
+            ...tag,
+            updated_at: new Date().toISOString()
+          }))
+        )
 
-  // Se um ID for fornecido, retorna apenas o produto específico
-  const product = id ? products.find(p => p.id === id) : undefined
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+    }
+  })
+
+  // Mutation para atualizar métricas
+  const updateProductMetrics = useMutation({
+    mutationFn: async ({ productId, metrics }: { productId: string, metrics: Partial<IProductMetric>[] }) => {
+      const { error } = await supabase
+        .from('product_metrics')
+        .upsert(
+          metrics.map(metric => ({
+            product_id: productId,
+            ...metric,
+            updated_at: new Date().toISOString()
+          }))
+        )
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+    }
+  })
+
+  // Mutations para time
+  const addTeamMember = useMutation({
+    mutationFn: async ({ productId, data }: { productId: string, data: Partial<ITeamMember> }) => {
+      const { error } = await supabase
+        .from('team_members')
+        .insert([{ product_id: productId, ...data }])
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+    }
+  })
+
+  const updateTeamMember = useMutation({
+    mutationFn: async ({ productId, memberId, data }: { 
+      productId: string, 
+      memberId: string, 
+      data: Partial<ITeamMember> 
+    }) => {
+      const { error } = await supabase
+        .from('team_members')
+        .update(data)
+        .eq('id', memberId)
+        .eq('product_id', productId)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+    }
+  })
+
+  const removeTeamMember = useMutation({
+    mutationFn: async ({ productId, memberId }: { productId: string, memberId: string }) => {
+      const { error } = await supabase
+        .from('team_members')
+        .delete()
+        .eq('id', memberId)
+        .eq('product_id', productId)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+    }
+  })
 
   return {
     products,
-    product,
     isLoading,
+    product,
+    isLoadingProduct,
+    risks,
+    isLoadingRisks,
     createProduct,
     updateProduct,
     deleteProduct,
-    refresh
+    addRisk,
+    updateRisk,
+    removeRisk,
+    updateProductTags,
+    updateProductMetrics,
+    addTeamMember,
+    updateTeamMember,
+    removeTeamMember
   }
 } 
